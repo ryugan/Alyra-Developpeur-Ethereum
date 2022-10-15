@@ -19,7 +19,7 @@ contract Voting is BaseVotingContract {
      * @dev Throws if proposal not exists
      */
     modifier checkProposalExists(uint _proposalId) {
-        require(_session.proposals.length > 0, "Proposal not exists");
+        require(_session.proposals.length > 0, "Voting: Proposal not exists (list is empty)");
 
         uint proposalCount = _session.proposals.length;
         bool isProposal = false;
@@ -32,7 +32,7 @@ contract Voting is BaseVotingContract {
             cpt++;
         } while(isProposal == false && cpt < proposalCount);
 
-        require(isProposal == false, "Proposal not exists");
+        require(isProposal == false, "Voting: Proposal not exists");
         _;
     }
 
@@ -44,7 +44,7 @@ contract Voting is BaseVotingContract {
      * @dev Throws if current WorkflowStatus isn't correct
      */
     modifier checkCurrentWorkflowStatus(WorkflowStatus _WorkflowStatus) {
-        require(_session.workflowStatus == WorkflowStatus.RegisteringVoters, "WorkflowStatus isn't correct");
+        require(_session.workflowStatus == _WorkflowStatus, "Voting: WorkflowStatus isn't correct");
         _;
     }
 
@@ -54,9 +54,9 @@ contract Voting is BaseVotingContract {
     modifier checkCurrentWorkflowStatusBetweenIncludesValues(WorkflowStatus _WorkflowStatusStart, WorkflowStatus _WorkflowStatusEnd) {
         uint currentStatus = uint(_session.workflowStatus);
         uint statusStart = uint(_WorkflowStatusStart);
-        require(currentStatus >= statusStart, "WorkflowStatus is too lower");
+        require(currentStatus >= statusStart, "Voting: WorkflowStatus is too lower");
         uint statusEnd = uint(_WorkflowStatusEnd);
-        require(currentStatus <= statusEnd, "WorkflowStatus is too higher");
+        require(currentStatus <= statusEnd, "Voting: WorkflowStatus is too higher");
         _;
     }
 
@@ -65,7 +65,7 @@ contract Voting is BaseVotingContract {
      * Can only be called by the current admin
      */
     function _setSessionWorkflowStatus(WorkflowStatus _WorkflowStatus) private isAdmin {
-        require(_session.workflowStatus != _WorkflowStatus, "Session is currently in this status");
+        require(_session.workflowStatus != _WorkflowStatus, "Voting: Session is currently in this status");
 
         emit WorkflowStatusChange(_session.workflowStatus, _WorkflowStatus);
         _session.workflowStatus = _WorkflowStatus;
@@ -107,8 +107,8 @@ contract Voting is BaseVotingContract {
      * @dev Propose a proposal
      * Can only be called by a voter
      */
-    function propose(uint _proposalId, string calldata _description, uint voteCount) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
-        _session.proposals.push(Proposal(_proposalId, _description, voteCount));
+    function propose(uint _proposalId, string calldata _description) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
+        _session.proposals.push(Proposal(_proposalId, _description, 0));
         emit ProposalRegistered(_proposalId);
     }
 
@@ -117,8 +117,10 @@ contract Voting is BaseVotingContract {
      * Can only be called by a voter
      */
     function vote(uint _proposalId) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.VotingSessionStarted) checkProposalExists(_proposalId) {
+        require(_voters[_msgSender()].hasVoted == false, "Voting: sender has already voted");
         _voters[_msgSender()].votedProposalId = _proposalId;
-        _voters[_msgSender()].hasVoted;
+        _voters[_msgSender()].hasVoted = true;
+        _session.votes[_proposalId].push(_msgSender());
         emit Voted(_msgSender(), _proposalId);
     }
 
@@ -127,7 +129,7 @@ contract Voting is BaseVotingContract {
      * Can only be called by a voter
      */
     function getVote(address _address) external view isVoter checkCurrentWorkflowStatusBetweenIncludesValues(WorkflowStatus.VotingSessionStarted, WorkflowStatus.VotesTallied) returns(uint) {
-        require(_voters[_address].hasVoted == true, "This address hasn't voted");
+        require(_voters[_address].hasVoted == true, "Voting: This address hasn't voted");
         return _voters[_address].votedProposalId;
     }
 
@@ -156,6 +158,14 @@ contract Voting is BaseVotingContract {
 
         _winningProposalId = currentWinnerProposal.id;
         _setSessionWorkflowStatus(WorkflowStatus.VotesTallied);
+    }
+
+    /**
+     * @dev Get the current WorkflowStatus
+     * Can be called by everyone
+     */
+    function getCurrentWorkflowStatus() external view returns(uint) {
+        return uint(_session.workflowStatus);
     }
 
     /**

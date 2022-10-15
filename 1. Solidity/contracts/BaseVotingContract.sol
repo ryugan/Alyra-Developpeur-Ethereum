@@ -17,7 +17,7 @@ abstract contract BaseVotingContract is BaseContract {
      * @dev Throws if called by any account other than the admin.
      */
     modifier isAdmin() {
-        _checkOwner();
+        _checkAdmin();
         _;
     }
 
@@ -30,10 +30,17 @@ abstract contract BaseVotingContract is BaseContract {
     }
 
     /**
+     * @dev Throws if the sender is not an admin.
+     */
+    function _checkAdmin() private view {
+        require(owner() == _msgSender(), "BaseVoting: Caller is not an admin");
+    }
+
+    /**
      * @dev Throws if the sender is not a voter.
      */
     function _checkVoter() private view {
-        require(getVoterWhitelistStatus(_msgSender()) == WhitelistStatus.Authorized, "Caller is not a voter");
+        require(getVoterWhitelistStatus(_msgSender()) == WhitelistStatus.Authorized, "BaseVoting: Caller is not a voter");
     }
 
     /**
@@ -48,8 +55,8 @@ abstract contract BaseVotingContract is BaseContract {
      * @dev Added a voter
      * Can only be called by the current admin
      */
-    function addVoter(address _address, Voter calldata _voter) internal isAdmin {
-        _voters[_address] = _voter;
+    function addVoter(address _address, WhitelistStatus _whitelistStatus) public isAdmin {
+        _voters[_address] = Voter(_whitelistStatus, false, 0);
         emit VoterRegistered(_address);
     }
 
@@ -57,7 +64,7 @@ abstract contract BaseVotingContract is BaseContract {
      * @dev Update a voter WhitelistSatut
      * Can only be called by the current admin
      */
-    function setVoterWhitelistStatus(address _address, WhitelistStatus _whitelistStatus) internal isAdmin {
+    function setVoterWhitelistStatus(address _address, WhitelistStatus _whitelistStatus) public isAdmin {
         _voters[_address].whitelistStatus = _whitelistStatus;
         emit VoterWhitelistStatusSetted(_address, uint(_whitelistStatus));
     }
