@@ -2,13 +2,14 @@
 pragma solidity >=0.8.17;
 
 import "./BaseContract.sol";
-import "../structures/Voter.sol";
+import "./../structures/Voter.sol";
 
 abstract contract BaseVotingContract is BaseContract {
 
     event VoterRegistered(address);
     event VoterWhitelistStatusSetted(address, uint);
     event VoterVote(address, uint);
+    event VoterResetVote(address);
 
     mapping(address => Voter) internal _voters;
 

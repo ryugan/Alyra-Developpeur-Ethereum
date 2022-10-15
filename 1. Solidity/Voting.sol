@@ -38,6 +38,26 @@ contract Voting is BaseVotingContract {
     }
 
     /**
+     * @dev Throws if current WorkflowStatus isn't correct
+     */
+    modifier checkCurrentWorkflowStatus(WorkflowStatus _WorkflowStatus) {
+        require(_session.workflowStatus == WorkflowStatus.RegisteringVoters, "WorkflowStatus isn't correct");
+        _;
+    }
+
+    /**
+     * @dev Throws if current WorkflowStatus between two includes status
+     */
+    modifier checkCurrentWorkflowStatusBetweenIncludesValues(WorkflowStatus _WorkflowStatusStart, WorkflowStatus _WorkflowStatusEnd) {
+        uint currentStatus = uint(_session.workflowStatus);
+        uint statusStart = uint(_WorkflowStatusStart);
+        require(currentStatus >= statusStart, "WorkflowStatus is too lower");
+        uint statusEnd = uint(_WorkflowStatusEnd);
+        require(currentStatus <= statusEnd, "WorkflowStatus is too higher");
+        _;
+    }
+
+    /**
      * @dev Set session WorkflowStatus
      * Can only be called by the current admin
      */
@@ -52,8 +72,7 @@ contract Voting is BaseVotingContract {
      * @dev Set session WorkflowStatus to ProposalsRegistrationStarted
      * Can only be called by the current admin
      */
-    function proposalsRegistrationStarted() external isAdmin {
-        require(_session.workflowStatus == WorkflowStatus.RegisteringVoters);
+    function proposalsRegistrationStarted() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.RegisteringVoters) {
         _setSessionWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted);
     }
 
@@ -61,8 +80,7 @@ contract Voting is BaseVotingContract {
      * @dev Set session WorkflowStatus to ProposalsRegistrationEnded
      * Can only be called by the current admin
      */
-    function proposalsRegistrationEnded() external isAdmin {
-        require(_session.workflowStatus == WorkflowStatus.ProposalsRegistrationStarted);
+    function proposalsRegistrationEnded() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
         _setSessionWorkflowStatus(WorkflowStatus.ProposalsRegistrationEnded);
     }
 
@@ -70,8 +88,7 @@ contract Voting is BaseVotingContract {
      * @dev Set session WorkflowStatus to VotingSessionStarted
      * Can only be called by the current admin
      */
-    function votingSessionStarted() external isAdmin {
-        require(_session.workflowStatus == WorkflowStatus.ProposalsRegistrationEnded);
+    function votingSessionStarted() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationEnded) {
         _setSessionWorkflowStatus(WorkflowStatus.VotingSessionStarted);
     }
 
@@ -79,8 +96,7 @@ contract Voting is BaseVotingContract {
      * @dev Set session WorkflowStatus to VotingSessionEnded
      * Can only be called by the current admin
      */
-    function votingSessionEnded() external isAdmin {
-        require(_session.workflowStatus == WorkflowStatus.ProposalsRegistrationStarted);
+    function votingSessionEnded() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
         _setSessionWorkflowStatus(WorkflowStatus.VotingSessionEnded);
     }
 
@@ -88,7 +104,7 @@ contract Voting is BaseVotingContract {
      * @dev Propose a proposal
      * Can only be called by a voter
      */
-    function propose(uint _proposalId) external isVoter {
+    function propose(uint _proposalId) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
         _session.proposalIds.push(_proposalId);
         emit ProposalRegistered(_proposalId);
     }
@@ -97,7 +113,7 @@ contract Voting is BaseVotingContract {
      * @dev Vote for an existing proposal
      * Can only be called by a voter
      */
-    function vote(uint _proposalId) external isVoter checkProposalExists(_proposalId) {
+    function vote(uint _proposalId) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.VotingSessionStarted) checkProposalExists(_proposalId) {
         _voters[_msgSender()].votedProposalId = _proposalId;
         _voters[_msgSender()].hasVoted;
         emit Voted(_msgSender(), _proposalId);
@@ -107,24 +123,16 @@ contract Voting is BaseVotingContract {
      * @dev Get the vote of a voter
      * Can only be called by a voter
      */
-    function getVote(address _address) external view isVoter returns(uint) {
+    function getVote(address _address) external view isVoter checkCurrentWorkflowStatusBetweenIncludesValues(WorkflowStatus.VotingSessionStarted, WorkflowStatus.VotesTallied) returns(uint) {
         require(_voters[_address].hasVoted == true, "This address hasn't voted");
         return _voters[_address].votedProposalId;
-    }
-
-    /**
-     * @dev Get the current winner proposal id
-     * Can be called by everyone
-     */
-    function getWinnerProposalId() external view returns(uint) {
-        return _winningProposalId;
     }
 
     /**
      * @dev Determine the proposal winner
      * Can only be called by the current admin
      */
-    function determineProposalWinner() external isAdmin {
+    function determineProposalWinner() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.VotingSessionEnded) {
         
         uint currentWinnerProposalId;
         uint currentWinnerVotesCount;
@@ -147,6 +155,14 @@ contract Voting is BaseVotingContract {
 
         _winningProposalId = currentWinnerProposalId;
         _setSessionWorkflowStatus(WorkflowStatus.VotesTallied);
+    }
+
+    /**
+     * @dev Get the current winner proposal id
+     * Can be called by everyone
+     */
+    function getWinnerProposalId() external view checkCurrentWorkflowStatus(WorkflowStatus.VotesTallied) returns(uint) {
+        return _winningProposalId;
     }
 
     /**
