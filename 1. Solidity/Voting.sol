@@ -2,6 +2,8 @@
 pragma solidity >=0.8.17;
 
 import "./contracts/BaseVotingContract.sol";
+import "./structures/Session.sol";
+import "./enumerations/WorkflowStatus.sol";
 
 contract Voting is BaseVotingContract {
 
@@ -17,17 +19,18 @@ contract Voting is BaseVotingContract {
      * @dev Throws if proposal not exists
      */
     modifier checkProposalExists(uint _proposalId) {
-        require(_session.proposalIds.length > 0, "Proposal not exists");
+        require(_session.proposals.length > 0, "Proposal not exists");
 
+        uint proposalCount = _session.proposals.length;
         bool isProposal = false;
         uint cpt = 0;
 
         do{
-            if (_session.proposalIds[cpt] == _proposalId) {
+            if (_session.proposals[cpt].id == _proposalId) {
                 isProposal = true;
             }
             cpt++;
-        } while(isProposal == false && cpt < _session.proposalIds.length);
+        } while(isProposal == false && cpt < proposalCount);
 
         require(isProposal == false, "Proposal not exists");
         _;
@@ -104,8 +107,8 @@ contract Voting is BaseVotingContract {
      * @dev Propose a proposal
      * Can only be called by a voter
      */
-    function propose(uint _proposalId) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
-        _session.proposalIds.push(_proposalId);
+    function propose(uint _proposalId, string calldata _description, uint voteCount) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
+        _session.proposals.push(Proposal(_proposalId, _description, voteCount));
         emit ProposalRegistered(_proposalId);
     }
 
@@ -134,26 +137,24 @@ contract Voting is BaseVotingContract {
      */
     function determineProposalWinner() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.VotingSessionEnded) {
         
-        uint currentWinnerProposalId;
-        uint currentWinnerVotesCount;
-        uint proposalCount = _session.proposalIds.length;
+        Proposal memory currentWinnerProposal;
+        uint proposalCount = _session.proposals.length;
 
         for (uint cpt=0 ; cpt<proposalCount; cpt++) {
-            uint proposalId = _session.proposalIds[cpt];
-            uint votesCount = _session.votes[proposalId].length;
+            Proposal storage proposal = _session.proposals[cpt];
+            proposal.voteCount = _session.votes[proposal.id].length;
 
             // Actuellement c'est le premier de la liste qui gagne
-            if (votesCount > currentWinnerVotesCount) {
-                currentWinnerProposalId = proposalId;
-                currentWinnerVotesCount = votesCount;
+            if (proposal.voteCount > currentWinnerProposal.voteCount) {
+                currentWinnerProposal = proposal;
             }
-            else if (votesCount == currentWinnerVotesCount) {
+            else if (proposal.voteCount == currentWinnerProposal.voteCount) {
                 // todo on pourrait faire gagner celui qui a reçu le nombre de vote en premier
                 // pour ça récupérer le dernier timestamp de chaque proposal et garder celui qui a le plus petit
             }
         }
 
-        _winningProposalId = currentWinnerProposalId;
+        _winningProposalId = currentWinnerProposal.id;
         _setSessionWorkflowStatus(WorkflowStatus.VotesTallied);
     }
 
@@ -171,10 +172,10 @@ contract Voting is BaseVotingContract {
      */
     function resetSessionAndVoters() external isAdmin {
 
-        uint proposalCount = _session.proposalIds.length;
+        uint proposalCount = _session.proposals.length;
 
         for (uint cpt=proposalCount-1; cpt>=0; cpt--) {
-            uint proposalId = _session.proposalIds[cpt];
+            uint proposalId = _session.proposals[cpt].id;
             address[] storage proposalVoters = _session.votes[proposalId];
             uint proposalVoterCount = proposalVoters.length;
 
@@ -184,7 +185,7 @@ contract Voting is BaseVotingContract {
                 proposalVoters.pop();
             }
 
-            _session.proposalIds.pop();
+            _session.proposals.pop();
         }
 
         _winningProposalId = 0;
