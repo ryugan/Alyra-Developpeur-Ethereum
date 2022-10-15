@@ -44,10 +44,10 @@ abstract contract BaseVotingContract is BaseContract {
     }
 
     /**
-     * @dev Returns a voter wWhitelistSatut
+     * @dev Returns a voter WhitelistSatut
      * Can only be called by the current admin
      */
-    function getVoterWhitelistStatus(address _address) internal view isAdmin returns(WhitelistStatus) {
+    function getVoterWhitelistStatus(address _address) private view returns(WhitelistStatus) {
         return _voters[_address].whitelistStatus;
     }
 
@@ -73,7 +73,7 @@ abstract contract BaseVotingContract is BaseContract {
      * @dev Reset a voter vote
      * Can only be called by the current admin
      */
-    function resetVoterVote(address _address) internal isAdmin {
+    function resetVoterVote(address _address) internal /*isAdmin*/  {
         _voters[_address].votedProposalId = 0;
         _voters[_address].hasVoted = false;
         emit VoterResetVote(_address);

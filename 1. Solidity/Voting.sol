@@ -15,8 +15,12 @@ contract Voting is BaseVotingContract {
     uint private _winningProposalId;
     Session private _session;
 
+    constructor() {
+        _setSessionWorkflowStatus(WorkflowStatus.RegisteringVoters);
+    }
+
     /**
-     * @dev Throws if proposal not exists
+     * @dev Throws if proposal exists
      */
     modifier checkProposalExists(uint _proposalId) {
         require(_session.proposals.length > 0, "Voting: Proposal not exists (list is empty)");
@@ -36,8 +40,27 @@ contract Voting is BaseVotingContract {
         _;
     }
 
-    constructor() {
-        _setSessionWorkflowStatus(WorkflowStatus.RegisteringVoters);
+    /**
+     * @dev Throws if proposal not exists
+     */
+    modifier checkProposalNotExists(uint _proposalId) {
+        if (_session.proposals.length > 0) {
+            return;
+        }
+
+        uint proposalCount = _session.proposals.length;
+        bool isProposal = false;
+        uint cpt = 0;
+
+        do{
+            if (_session.proposals[cpt].id == _proposalId) {
+                isProposal = true;
+            }
+            cpt++;
+        } while(isProposal == false && cpt < proposalCount);
+
+        require(isProposal == true, "Voting: Proposal exists");
+        _;
     }
 
     /**
@@ -107,7 +130,7 @@ contract Voting is BaseVotingContract {
      * @dev Propose a proposal
      * Can only be called by a voter
      */
-    function propose(uint _proposalId, string calldata _description) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
+    function propose(uint _proposalId, string calldata _description) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) checkProposalNotExists(_proposalId) {
         _session.proposals.push(Proposal(_proposalId, _description, 0));
         emit ProposalRegistered(_proposalId);
     }
