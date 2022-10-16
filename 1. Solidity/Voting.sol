@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.17;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "./contracts/BaseVotingContract.sol";
 import "./structures/Session.sol";
 import "./enumerations/WorkflowStatus.sol";
@@ -23,7 +24,7 @@ contract Voting is BaseVotingContract {
      * @dev Throws if proposal exists
      */
     modifier checkProposalExists(uint _proposalId) {
-        require(_session.proposals.length > 0, "Voting: Proposal not exists (list is empty)");
+        require(_session.proposals.length == 0, "Voting: Proposal not exists (list is empty)");
 
         uint proposalCount = _session.proposals.length;
         bool isProposal = false;
@@ -44,22 +45,17 @@ contract Voting is BaseVotingContract {
      * @dev Throws if proposal not exists
      */
     modifier checkProposalNotExists(uint _proposalId) {
-        if (_session.proposals.length > 0) {
-            return;
+        uint proposalCount = _session.proposals.length;
+
+        if (proposalCount > 0) {
+            uint cpt = 0;
+
+            do{
+                require(_session.proposals[cpt].id == _proposalId, "Voting: Proposal exists");
+                cpt++;
+            } while(cpt < proposalCount);
         }
 
-        uint proposalCount = _session.proposals.length;
-        bool isProposal = false;
-        uint cpt = 0;
-
-        do{
-            if (_session.proposals[cpt].id == _proposalId) {
-                isProposal = true;
-            }
-            cpt++;
-        } while(isProposal == false && cpt < proposalCount);
-
-        require(isProposal == true, "Voting: Proposal exists");
         _;
     }
 
@@ -122,7 +118,7 @@ contract Voting is BaseVotingContract {
      * @dev Set session WorkflowStatus to VotingSessionEnded
      * Can only be called by the current admin
      */
-    function votingSessionEnded() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) {
+    function votingSessionEnded() external isAdmin checkCurrentWorkflowStatus(WorkflowStatus.VotingSessionStarted) {
         _setSessionWorkflowStatus(WorkflowStatus.VotingSessionEnded);
     }
 
@@ -133,6 +129,25 @@ contract Voting is BaseVotingContract {
     function propose(uint _proposalId, string calldata _description) external isVoter checkCurrentWorkflowStatus(WorkflowStatus.ProposalsRegistrationStarted) checkProposalNotExists(_proposalId) {
         _session.proposals.push(Proposal(_proposalId, _description, 0));
         emit ProposalRegistered(_proposalId);
+    }
+
+    /**
+     * @dev Get list of proposals
+     * Can only be called by a voter
+     */
+    function getProposalsList() external isVoter view returns(string memory) {
+        require(_session.proposals.length == 0, "Voting: Proposal not exists (list is empty)");
+
+        string memory result = "";
+        uint proposalCount = _session.proposals.length;
+
+        for (uint cpt=0 ; cpt<proposalCount; cpt++) {
+            Proposal memory proposal = _session.proposals[cpt];
+            string memory strId = Strings.toString(proposal.id);
+            result = string.concat(string.concat(result, strId), ", ");
+        }
+        
+        return result;
     }
 
     /**
