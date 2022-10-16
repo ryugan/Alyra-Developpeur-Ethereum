@@ -12,6 +12,7 @@ contract Voting is BaseVotingContract {
     event ProposalRegistered(uint proposalId);
     event Voted(address voter, uint proposalId);
     event WinnerRegistered(uint proposalId);
+    event ResetSession();
 
     uint private _winningProposalId;
     Session private _session;
@@ -219,24 +220,36 @@ contract Voting is BaseVotingContract {
      * Can only be called by the current admin
      */
     function resetSessionAndVoters() external isAdmin {
+        require(_session.proposals.length > 0, "No session data to clean");
 
         uint proposalCount = _session.proposals.length;
 
-        for (uint cpt=proposalCount-1; cpt>=0; cpt--) {
-            uint proposalId = _session.proposals[cpt].id;
-            address[] storage proposalVoters = _session.votes[proposalId];
-            uint proposalVoterCount = proposalVoters.length;
-
-            for (uint cpt2=proposalVoterCount-1; cpt2>=0; cpt2--) {
-                address proposalVoter = proposalVoters[cpt2];
-                resetVoterVote(proposalVoter);
-                proposalVoters.pop();
-            }
+        for (uint cpt=proposalCount; cpt>0; cpt--) {
+            uint proposalId = _session.proposals[cpt-1].id;
+            resetProposalVoters(proposalId);
 
             _session.proposals.pop();
         }
 
         _winningProposalId = 0;
         _setSessionWorkflowStatus(WorkflowStatus.RegisteringVoters);
+        emit ResetSession();
+    }
+    /**
+     * @dev Reset the voters of a proposal
+     * Can only be called by the current admin
+     */
+    function resetProposalVoters(uint proposalId) private isAdmin {
+
+        address[] storage proposalVoters = _session.votes[proposalId];
+        uint proposalVoterCount = proposalVoters.length;
+
+        require(proposalVoterCount > 0, "No proposal's voters to clean");
+
+        for (uint cpt=proposalVoterCount; cpt>0; cpt--) {
+            address proposalVoter = proposalVoters[cpt-1];
+            resetVoterVote(proposalVoter);
+            proposalVoters.pop();
+        }
     }
 }
