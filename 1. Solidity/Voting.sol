@@ -24,7 +24,7 @@ contract Voting is BaseVotingContract {
      * @dev Throws if proposal exists
      */
     modifier checkProposalExists(uint _proposalId) {
-        require(_session.proposals.length == 0, "Voting: Proposal not exists (list is empty)");
+        require(_session.proposals.length > 0, "Voting: Proposal not exists (list is empty)");
 
         uint proposalCount = _session.proposals.length;
         bool isProposal = false;
@@ -37,7 +37,7 @@ contract Voting is BaseVotingContract {
             cpt++;
         } while(isProposal == false && cpt < proposalCount);
 
-        require(isProposal == false, "Voting: Proposal not exists");
+        require(isProposal == true, "Voting: Proposal not exists");
         _;
     }
 
@@ -51,7 +51,7 @@ contract Voting is BaseVotingContract {
             uint cpt = 0;
 
             do{
-                require(_session.proposals[cpt].id == _proposalId, "Voting: Proposal exists");
+                require(_session.proposals[cpt].id != _proposalId, "Voting: Proposal exists");
                 cpt++;
             } while(cpt < proposalCount);
         }
@@ -136,7 +136,7 @@ contract Voting is BaseVotingContract {
      * Can only be called by a voter
      */
     function getProposalsList() external isVoter view returns(string memory) {
-        require(_session.proposals.length == 0, "Voting: Proposal not exists (list is empty)");
+        require(_session.proposals.length > 0, "Voting: Proposal not exists (list is empty)");
 
         string memory result = "";
         uint proposalCount = _session.proposals.length;
