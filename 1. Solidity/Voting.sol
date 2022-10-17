@@ -190,7 +190,7 @@ contract Voting is BaseVotingContract {
                 currentWinnerProposal = proposal;
             }
             else if (proposal.voteCount == currentWinnerProposal.voteCount) {
-                // todo on pourrait faire gagner celui qui a reçu le nombre de vote en premier
+                // @correcteur on pourrait faire gagner celui qui a reçu le nombre de vote en premier
                 // pour ça récupérer le dernier timestamp de chaque proposal et garder celui qui a le plus petit
             }
         }
