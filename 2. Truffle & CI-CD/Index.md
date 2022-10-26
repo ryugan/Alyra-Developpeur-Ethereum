@@ -5,7 +5,7 @@
 ___________________________________________________________________________________________________________________________________________
 ## Prérequis
 
-Afin de pouvoir correctement exécuter le projet sur votre poste, vous devez d'abord démarrer une blockchain Ethereum local.
+Afin de pouvoir correctement exécuter le projet sur votre poste, vous devez d'abord démarrer une blockchain Ethereum locale.
 Le projet est pré-configuré pour ganache, si cela n'est pas votre cas veuillez modifier le fichier `truffle-config.js`
 ___________________________________________________________________________________________________________________________________________
 ## Utilisation
