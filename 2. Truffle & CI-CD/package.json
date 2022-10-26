@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "generate-types": "npx typechain --target=truffle-v5 'build/contracts/*.json'",
-    "migrate": "tsc -p ./tsconfig.migrate.json --outDir ./migrations && truffle migrate",
     "compile": "npx truffle compile && npm run generate-types",
+    "migrate": "tsc -p ./tsconfig.migrate.json --outDir ./migrations && truffle migrate",
     "test-development": "npx truffle test test/simplestorage.ts --network development"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@openzeppelin/contracts": "^4.7.3",
     "@openzeppelin/test-helpers": "^0.5.16",
     "@typechain/truffle-v5": "^8.0.1",
     "@types/chai": "^4.3.3",

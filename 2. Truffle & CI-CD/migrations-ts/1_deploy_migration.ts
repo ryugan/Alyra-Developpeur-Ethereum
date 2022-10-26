@@ -1,17 +1,16 @@
-const SimpleStorage = artifacts.require('SimpleStorage')
 
 const migration: Truffle.Migration = async (
   deployer: Truffle.Deployer,
   network: string,
   accounts: string[]
 ) => {
-  const SimpleStorage = artifacts.require("SimpleStorage");
+  const Voting = artifacts.require("Voting");
 
-  await deployer.deploy(SimpleStorage);
+  await deployer.deploy(Voting);
 
-  const simpleStorage = await SimpleStorage.deployed();
+  const voting = await Voting.deployed();
   console.log(
-    `Contract deployed at ${simpleStorage.address} in network: ${network}.`
+    `Contract deployed at ${voting.address} in network: ${network}.`
   );
 };
 

@@ -2,14 +2,17 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { SimpleStorageContract } from "./SimpleStorage";
+import { OwnableContract } from "./Ownable";
+import { VotingContract } from "./Voting";
 
 declare global {
   namespace Truffle {
     interface Artifacts {
-      require(name: "SimpleStorage"): SimpleStorageContract;
+      require(name: "Ownable"): OwnableContract;
+      require(name: "Voting"): VotingContract;
     }
   }
 }
 
-export { SimpleStorageContract, SimpleStorageInstance } from "./SimpleStorage";
+export { OwnableContract, OwnableInstance } from "./Ownable";
+export { VotingContract, VotingInstance } from "./Voting";

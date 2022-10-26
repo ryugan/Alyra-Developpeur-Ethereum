@@ -2,7 +2,7 @@
 build
 
 # typechain
-types/truffle-contrats
+types/truffle-contracts/
 
 # buidler
 artifacts
