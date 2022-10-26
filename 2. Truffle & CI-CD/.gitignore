@@ -1,0 +1,14 @@
+# truffle
+build
+
+# typechain
+types/truffle-contrats
+
+# buidler
+artifacts
+cache
+migrations
+
+# development
+node_modules
+.env
