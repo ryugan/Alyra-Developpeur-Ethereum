@@ -7,7 +7,7 @@
     "generate-types": "npx typechain --target=truffle-v5 'build/contracts/*.json'",
     "compile": "npx truffle compile && npm run generate-types",
     "migrate": "tsc -p ./tsconfig.migrate.json --outDir ./migrations && truffle migrate",
-    "test-development": "npx truffle test test/simplestorage.ts --network development"
+    "test-development": "npx truffle test test/voting.test.ts --network development"
   },
   "author": "",
   "license": "ISC",
