@@ -18,7 +18,7 @@ contract Voting is Ownable {
         uint voteCount;
     }
 
-    enum  WorkflowStatus {
+    enum WorkflowStatus {
         RegisteringVoters,
         ProposalsRegistrationStarted,
         ProposalsRegistrationEnded,
