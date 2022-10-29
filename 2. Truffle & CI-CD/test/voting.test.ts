@@ -48,7 +48,10 @@ contract("Voting", accounts => {
     const startProposalError = 'Registering proposals cant be started now';
     const voterRegistrationError:string = 'Voters registration is not open yet';
     const voterRegisteredError:string = 'Already registered';
+    const addProposalStatusError = 'Proposals are not allowed yet';
+    const addProposalDescError = 'Vous ne pouvez pas ne rien proposer';
     const endProposalError = 'Registering proposals havent started yet';
+    const startVotingError = 'Registering proposals phase is not finished';
 
     let votingInstance: VotingInstance;
  
@@ -65,6 +68,17 @@ contract("Voting", accounts => {
 
         return (args?.[1] as BN)?.toNumber() as WorkflowStatus;
     }
+
+    function getAddedProposalIndex(eventLog:Truffle.TransactionLog<AllEvents> | undefined) : BN | undefined {
+
+        if (eventLog == undefined || eventLog.args == undefined ) {
+            return undefined;
+        }
+        const args:any = eventLog.args;
+
+        return args?.[0];
+    }
+
 
     describe("full test", () => {
         beforeEach(reinitContract);
@@ -214,6 +228,78 @@ contract("Voting", accounts => {
             });
         });
 
+        describe("... test addProposal", () => {
+
+            it("... if not voter", async () => {
+                const addProposalPromise = votingInstance.addProposal("", {from:ownerAccount});
+                await expectRevert(addProposalPromise, voterError);
+            });
+
+            describe("... if is voter", () => {
+
+                beforeEach(async () => {
+                    await votingInstance.addVoter(voter1Account, {from:ownerAccount});
+                    await votingInstance.addVoter(voter2Account, {from:ownerAccount});
+                    await votingInstance.addVoter(voter3Account, {from:ownerAccount});
+                });
+
+                it("... and workflow != ProposalsRegistrationStarted", async () => {
+                    const endProposalPromise = votingInstance.addProposal("", {from:voter1Account});
+                    await expectRevert(endProposalPromise, addProposalStatusError);
+                });
+
+                describe("... and workflow == ProposalsRegistrationStarted", () => {
+
+                    beforeEach(async () => {
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                    });
+
+                    it("... and proposal is empty", async () => {
+                        const addProposalPromise = votingInstance.addProposal("", {from:voter1Account});
+                        await expectRevert(addProposalPromise, addProposalDescError);
+                    });
+
+                    describe("... and proposal is not empty ", () => {
+
+                        const voter1Proposal:string = "42";
+                        let receipt: Truffle.TransactionResponse<AllEvents>;
+
+                        beforeEach(async () => {
+                            receipt = await votingInstance.addProposal(voter1Proposal, {from:voter1Account});
+                        });
+
+                        it("... and emit WorkflowStatusChange", () => {
+                            expectEvent(receipt, 'ProposalRegistered');
+                        });
+
+                        it("... and proposal exists", async () => {
+                            const proposalIndex:BN | undefined = getAddedProposalIndex(receipt.logs.at(0));
+
+                            if (proposalIndex == undefined) {
+                                assert.fail();
+                            }
+
+                            const currentFirstProposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter1Account});
+                            expect(currentFirstProposal?.description).to.be.equal(voter1Proposal);
+                        });
+
+                        it("... and another addProposal works", async () => {
+                            const voter2Proposal:string = "23";
+                            const receipt2: Truffle.TransactionResponse<AllEvents> = await votingInstance.addProposal(voter2Proposal, {from:voter2Account});
+                            const proposalIndex:BN | undefined = getAddedProposalIndex(receipt2.logs.at(0));
+
+                            if (proposalIndex == undefined) {
+                                assert.fail();
+                            }
+
+                            const currentFirstProposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter1Account});
+                            expect(currentFirstProposal?.description).to.be.equal(voter2Proposal);
+                        });
+                    });
+                });
+            });
+        });
+
         describe("... test endProposalsRegistering", () => {
             
             it("... if is not owner", async () => {
@@ -248,6 +334,25 @@ contract("Voting", accounts => {
                 });
             });
         });
+
+        describe("... test startVotingSession", () => {
+            
+            it("... if is not owner", async () => {
+                const startVotingPromise = votingInstance.startVotingSession({from:unknownAccount});
+                await expectRevert(startVotingPromise, ownableError);
+            });
+
+            // Test if is owner 
+
+                // And workflow != ProposalsRegistrationEnded
+                //startVotingError
+
+                // And workflow = ProposalsRegistrationEnded
+
+                    // Test new workflow status = VotingSessionStarted
+
+                    // Test EMIT
+        });
 /*
         
         describe("... test getOneProposal", () => {
@@ -257,24 +362,6 @@ contract("Voting", accounts => {
             // Test if is voter and proposal not exists
 
             // Test if is voter and proposal exists
-        });
-
-        
-
-        describe("... test addProposal", () => {
-            // Test if not voter
-
-            // Test if is voter 
-            
-                // And workflow != ProposalsRegistrationStarted
-
-                // And workflow = ProposalsRegistrationStarted
-
-                    // And proposal is empty
-
-                    // And proposal is not empty (+ EMIT)
-
-                    // Test proposal exists now
         });
 
         describe("... test setVote", () => {
@@ -320,19 +407,7 @@ contract("Voting", accounts => {
         });
 
 
-        describe("... test startVotingSession", () => {
-            // Test if not owner
-
-            // Test if is owner 
-
-                // And workflow != ProposalsRegistrationEnded
-
-                // And workflow = ProposalsRegistrationEnded
-
-                    // Test new workflow status = VotingSessionStarted
-
-                    // Test EMIT
-        });
+        
 
         describe("... test endVotingSession", () => {
             // Test if not owner
