@@ -300,6 +300,42 @@ contract("Voting", accounts => {
             });
         });
 
+        describe("... test getOneProposal", () => {
+            
+            const indexNotExists:BN = new BN(42);
+
+            it("... if not voter", async () => {
+                const getOneProposalPromise = votingInstance.getOneProposal(indexNotExists, {from:ownerAccount});
+                await expectRevert(getOneProposalPromise, voterError);
+            });
+
+            describe("... if is voter", () => {
+
+                beforeEach(async () => {
+                    await votingInstance.addVoter(voter1Account, {from:ownerAccount});
+                    await votingInstance.startProposalsRegistering({from:ownerAccount});
+                });
+
+                it("... and proposal not exists raw error", async () => {
+                    const getOneProposalPromise = votingInstance.getOneProposal(indexNotExists, {from:voter1Account});
+                    await expectRevert.unspecified(getOneProposalPromise);
+                });
+
+                it("... and proposal exists", async () => {
+                    const voter1Proposal:string = "42";
+                    const receipt1: Truffle.TransactionResponse<AllEvents> = await votingInstance.addProposal(voter1Proposal, {from:voter1Account});
+                    const proposalIndex:BN | undefined = getAddedProposalIndex(receipt1.logs.at(0));
+
+                    if (proposalIndex == undefined) {
+                        assert.fail();
+                    }
+
+                    const currentFirstProposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter1Account});
+                    expect(currentFirstProposal?.description).to.be.equal(voter1Proposal);
+                });
+            });
+        });
+
         describe("... test endProposalsRegistering", () => {
             
             it("... if is not owner", async () => {
@@ -355,14 +391,7 @@ contract("Voting", accounts => {
         });
 /*
         
-        describe("... test getOneProposal", () => {
-            
-            // Test if not voter
-
-            // Test if is voter and proposal not exists
-
-            // Test if is voter and proposal exists
-        });
+        
 
         describe("... test setVote", () => {
             // Test if not voter

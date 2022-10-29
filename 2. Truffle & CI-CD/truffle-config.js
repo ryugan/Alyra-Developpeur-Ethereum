@@ -14,13 +14,13 @@ module.exports = {
 
   },
 
-  mocha: {
+  mocha: {/*
     reporter: 'eth-gas-reporter',
     reporterOptions: {
       gasPrice: 1,
       token: 'ETH',
       showTimeSPent: true,
-    }
+    }*/
   },
 
   // Configure your compilers
