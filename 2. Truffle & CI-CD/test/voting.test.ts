@@ -487,10 +487,11 @@ contract("Voting", accounts => {
                     });
                 });
 
-                describe("... and integration test ", () => {
+                describe("... and integration tests ", () => {
 
                     const firstVote:BN = new BN(0);
                     const secondVote:BN = new BN(1);
+                    const thirdVote:BN = new BN(2);
 
                     beforeEach(async () => {
                         await votingInstance.addVoter(voter1Account, {from:ownerAccount});
@@ -510,6 +511,17 @@ contract("Voting", accounts => {
                         await votingInstance.tallyVotes({from:ownerAccount});
                         const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
 
+                        expect(currentWinningProposalID).to.be.bignumber.equal(firstVote);
+                    });
+
+                    it("... and 1 vote for the 1st, 1 for 2nd and 1 for the 3rd and the 1st winner", async () => {
+                        await votingInstance.setVote(firstVote, {from:voter1Account});
+                        await votingInstance.setVote(secondVote, {from:voter2Account});
+                        await votingInstance.setVote(thirdVote, {from:voter3Account});
+                        await votingInstance.endVotingSession({from:ownerAccount});
+                        await votingInstance.tallyVotes({from:ownerAccount});
+                        const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
+                        
                         expect(currentWinningProposalID).to.be.bignumber.equal(firstVote);
                     });
 
