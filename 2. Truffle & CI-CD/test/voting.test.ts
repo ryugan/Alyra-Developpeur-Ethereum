@@ -95,7 +95,7 @@ contract("Voting", accounts => {
 
         describe("... test winningProposalID", () => {
             
-            it("... get winningProposalID  is default with Owner", async () => {
+            it("... get winningProposalID is default with Owner", async () => {
                 const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
                 expect(currentWinningProposalID).to.be.bignumber.equal(defaultBigNumber);
             });
@@ -366,7 +366,7 @@ contract("Voting", accounts => {
                     });
 
                     it("... and test current workflow status = ProposalsRegistrationEnded", async () => {
-                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0))
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0));
                         expect(currentStatus).to.be.equal(WorkflowStatus.ProposalsRegistrationEnded);
                     });
                 });
@@ -402,7 +402,7 @@ contract("Voting", accounts => {
                     });
 
                     it("... and test current workflow status = VotingSessionStarted", async () => {
-                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0))
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0));
                         expect(currentStatus).to.be.equal(WorkflowStatus.VotingSessionStarted);
                     });
                 });
@@ -412,15 +412,15 @@ contract("Voting", accounts => {
         describe("... test endVotingSession", () => {
             
             it("... if is not owner", async () => {
-                const startVotingPromise = votingInstance.endVotingSession({from:unknownAccount});
-                await expectRevert(startVotingPromise, ownableError);
+                const endVotingPromise = votingInstance.endVotingSession({from:unknownAccount});
+                await expectRevert(endVotingPromise, ownableError);
             });
 
             describe("... if is owner", () => {
 
                 it("... and workflow != VotingSessionStarted", async () => {
-                    const startVotingSPromise = votingInstance.endVotingSession({from:ownerAccount});
-                    await expectRevert(startVotingSPromise, endVotingError);
+                    const endVotingPromise = votingInstance.endVotingSession({from:ownerAccount});
+                    await expectRevert(endVotingPromise, endVotingError);
                 });
 
                 describe("... and workflow == VotingSessionStarted", () => {
@@ -439,11 +439,92 @@ contract("Voting", accounts => {
                     });
 
                     it("... and test current workflow status = VotingSessionEnded", async () => {
-                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0))
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0));
                         expect(currentStatus).to.be.equal(WorkflowStatus.VotingSessionEnded);
                     });
                 });
             });     
+        });
+
+        describe("... test tallyVotes", () => {
+
+            it("... if is not owner", async () => {
+                const tallyVotesPromise = votingInstance.tallyVotes({from:unknownAccount});
+                await expectRevert(tallyVotesPromise, ownableError);
+            });
+
+            describe("... if is owner", () => {
+
+                it("... and workflow != VotingSessionEnded", async () => {
+                    const tallyVotesPromise = votingInstance.tallyVotes({from:ownerAccount});
+                    await expectRevert(tallyVotesPromise, tallyVotesError);
+                });
+
+                describe("... and workflow == VotingSessionEnded", () => {
+
+                    let receipt: Truffle.TransactionResponse<AllEvents>;
+
+                    before(async () => {
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                        await votingInstance.endProposalsRegistering({from:ownerAccount});
+                        await votingInstance.startVotingSession({from:ownerAccount});
+                        await votingInstance.endVotingSession({from:ownerAccount});
+                        receipt = await votingInstance.tallyVotes({from:ownerAccount});
+                    });
+
+                    it("... and emit WorkflowStatusChange", async () => {
+                        expectEvent(receipt, 'WorkflowStatusChange');
+                    });
+
+                    it("... and test current workflow status = VotesTallied", async () => {
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0));
+                        expect(currentStatus).to.be.equal(WorkflowStatus.VotesTallied);
+                    });
+
+                    it("... get winningProposalID is default with Owner", async () => {
+                        const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
+                        expect(currentWinningProposalID).to.be.bignumber.equal(defaultBigNumber);
+                    });
+                });
+
+                describe("... and integration test ", () => {
+
+                    const firstVote:BN = new BN(0);
+                    const secondVote:BN = new BN(1);
+
+                    beforeEach(async () => {
+                        await votingInstance.addVoter(voter1Account, {from:ownerAccount});
+                        await votingInstance.addVoter(voter2Account, {from:ownerAccount});
+                        await votingInstance.addVoter(voter3Account, {from:ownerAccount});
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                        await votingInstance.addProposal("42", {from:voter1Account});
+                        await votingInstance.addProposal("23", {from:voter2Account});
+                        await votingInstance.addProposal("666", {from:voter3Account});
+                        await votingInstance.endProposalsRegistering({from:ownerAccount});
+                        await votingInstance.startVotingSession({from:ownerAccount});
+                    });
+
+                    it("... and only 1 vote for the 1st and 1st winner", async () => {
+                        await votingInstance.setVote(firstVote, {from:voter1Account});
+                        await votingInstance.endVotingSession({from:ownerAccount});
+                        await votingInstance.tallyVotes({from:ownerAccount});
+                        const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
+
+                        expect(currentWinningProposalID).to.be.bignumber.equal(firstVote);
+                    });
+
+                    it("... and 1 vote for the 1st, 2 for 2nd and 0 for the 3rd and the 2nd winner", async () => {
+                        await votingInstance.setVote(firstVote, {from:voter1Account});
+                        await votingInstance.setVote(secondVote, {from:voter2Account});
+                        await votingInstance.setVote(secondVote, {from:voter3Account});
+                        await votingInstance.endVotingSession({from:ownerAccount});
+                        await votingInstance.tallyVotes({from:ownerAccount});
+                        const currentWinningProposalID = await votingInstance.winningProposalID.call({from:ownerAccount});
+                        
+                        expect(currentWinningProposalID).to.be.bignumber.equal(secondVote);
+                    });
+                });
+            });   
         });
 /*
         
@@ -491,21 +572,7 @@ contract("Voting", accounts => {
                             // Test EMIT
         });
 
-        describe("... test tallyVotes", () => {
-            // Test if not owner
-
-            // Test if is owner 
-
-                // And workflow != VotingSessionEnded
-
-                // And workflow = VotingSessionEnded
-
-                    // Test new workflow status = VotesTallied
-
-                    // winningProposalID
-
-                    // Test EMIT
-        });
+        
     */
     });
 });
