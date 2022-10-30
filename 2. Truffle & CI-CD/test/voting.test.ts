@@ -52,6 +52,9 @@ contract("Voting", accounts => {
     const addProposalDescError = 'Vous ne pouvez pas ne rien proposer';
     const endProposalError = 'Registering proposals havent started yet';
     const startVotingError = 'Registering proposals phase is not finished';
+    const voteSessionNotStartError = 'Voting session havent started yet';
+    const voterAlreadyVotedError = 'You have already voted';
+    const proposalNotFoundError = 'Proposal not found';
     const endVotingError = 'Voting session havent started yet';
     const tallyVotesError = 'Current status is not voting session ended';
 
@@ -71,6 +74,16 @@ contract("Voting", accounts => {
         return (args?.[1] as BN)?.toNumber() as WorkflowStatus;
     }
 
+    function getVoterProposalIndex(eventLog:Truffle.TransactionLog<AllEvents> | undefined) : BN | undefined {
+
+        if (eventLog == undefined || eventLog.args == undefined ) {
+            return undefined;
+        }
+        const args:any = eventLog.args;
+
+        return args?.[1] as BN;
+    }
+
     function getAddedProposalIndex(eventLog:Truffle.TransactionLog<AllEvents> | undefined) : BN | undefined {
 
         if (eventLog == undefined || eventLog.args == undefined ) {
@@ -84,7 +97,7 @@ contract("Voting", accounts => {
 
     describe("full test", () => {
         beforeEach(reinitContract);
- 
+
         describe("... test constructor", () => {
             
             it("... constructeur owner is owner", async () => {
@@ -383,8 +396,8 @@ contract("Voting", accounts => {
             describe("... if is owner", () => {
 
                 it("... and workflow != ProposalsRegistrationEnded", async () => {
-                    const startVotingSPromise = votingInstance.startVotingSession({from:ownerAccount});
-                    await expectRevert(startVotingSPromise, startVotingError);
+                    const startVotingPromise = votingInstance.startVotingSession({from:ownerAccount});
+                    await expectRevert(startVotingPromise, startVotingError);
                 });
 
                 describe("... and workflow == ProposalsRegistrationEnded", () => {
@@ -407,6 +420,131 @@ contract("Voting", accounts => {
                     });
                 });
             });     
+        });
+
+        describe("... test setVote", () => {
+
+            const firstVote:BN = new BN(0);
+            const secondVote:BN = new BN(1);
+
+            it("... if not voter", async () => {
+                const getOneProposalPromise = votingInstance.setVote(firstVote, {from:ownerAccount});
+                await expectRevert(getOneProposalPromise, voterError);
+            });
+
+            describe("... if is voter", () => {
+
+                beforeEach(async () => {
+                    await votingInstance.addVoter(voter1Account, {from:ownerAccount});
+                    await votingInstance.addVoter(voter2Account, {from:ownerAccount});
+                });
+
+                it("... and workflow != VotingSessionStarted", async () => {
+                    const setVotePromise = votingInstance.setVote(firstVote, {from:voter1Account});
+                    await expectRevert(setVotePromise, voteSessionNotStartError);
+                });
+
+                describe("... and workflow == VotingSessionStarted", () => {
+
+                    beforeEach(async () => {   
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                        await votingInstance.addProposal("42", {from:voter1Account});
+                        await votingInstance.addProposal("23", {from:voter2Account});
+                        await votingInstance.endProposalsRegistering({from:ownerAccount});
+                        await votingInstance.startVotingSession({from:ownerAccount});
+                    });
+
+                    it("... first voter has already voted", async () => {
+                        await votingInstance.setVote(firstVote, {from:voter1Account});
+                        const setVotePromise = votingInstance.setVote(firstVote, {from:voter1Account});
+                        await expectRevert(setVotePromise, voterAlreadyVotedError);
+                    });
+
+                    describe("... and first voter hasn't voted", () => {
+
+                        it("... proposal not found", async () => {
+                            const setVotePromise = votingInstance.setVote(42, {from:voter1Account});
+                            await expectRevert(setVotePromise, proposalNotFoundError);
+                        });
+
+                        describe("... and proposal found", () => {
+
+                            let receipt: Truffle.TransactionResponse<AllEvents>;
+
+                            beforeEach(async () => {
+                                receipt = await votingInstance.setVote(firstVote, {from:voter1Account});
+                            });
+
+                            it("... and voter has voted", async () => {
+                                const voter:Voter = await votingInstance.getVoter(voter1Account, {from:voter1Account});
+                                expect(voter?.hasVoted).to.be.true;
+                            });
+
+                            it("... and voter change votedProposalId", async () => {
+                                const voter:Voter = await votingInstance.getVoter(voter1Account, {from:voter1Account});
+                                expect(voter?.votedProposalId).to.be.bignumber.equal(firstVote);
+                            });
+
+                            it("... and emit WorkflowStatusChange", async () => {
+                                expectEvent(receipt, 'Voted');
+                            });
+                            
+                            it("... and increment proposal vote count", async () => {
+                                const proposalIndex: BN | undefined = getVoterProposalIndex(receipt.logs.at(0));
+
+                                if (proposalIndex == undefined) {
+                                    assert.fail();
+                                }
+
+                                const proposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter1Account});
+                                expect(proposal?.voteCount).to.be.bignumber.equal(new BN(1));
+                            });
+                        });
+                    });
+
+                    describe("... and two voters voted", () => {
+                            
+                        it("... and first voter has'nt voted", async () => {
+                            const receipt: Truffle.TransactionResponse<AllEvents> = await votingInstance.setVote(secondVote, {from:voter2Account});
+                            const proposalIndex: BN | undefined = getVoterProposalIndex(receipt.logs.at(0));
+
+                            if (proposalIndex == undefined) {
+                                assert.fail();
+                            }
+
+                            const proposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter2Account});
+                            expect(proposal?.voteCount).to.be.bignumber.equal(new BN(1));
+                        });
+
+                        it("... and first voter has already voted for another proposal", async () => {
+                            await votingInstance.setVote(firstVote, {from:voter1Account});
+                            const receipt: Truffle.TransactionResponse<AllEvents> = await votingInstance.setVote(secondVote, {from:voter2Account});
+                            const proposalIndex: BN | undefined = getVoterProposalIndex(receipt.logs.at(0));
+
+                            if (proposalIndex == undefined) {
+                                assert.fail();
+                            }
+
+                            const proposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter2Account});
+                            expect(proposal?.voteCount).to.be.bignumber.equal(new BN(1));
+                        });
+
+                                
+                        it("... and two voters voted for the same proposal", async () => {
+                            await votingInstance.setVote(firstVote, {from:voter1Account});
+                            const receipt: Truffle.TransactionResponse<AllEvents> = await votingInstance.setVote(firstVote, {from:voter2Account});
+                            const proposalIndex: BN | undefined = getVoterProposalIndex(receipt.logs.at(0));
+
+                            if (proposalIndex == undefined) {
+                                assert.fail();
+                            }
+
+                            const proposal:Proposal = await votingInstance.getOneProposal(proposalIndex, {from:voter2Account});
+                            expect(proposal?.voteCount).to.be.bignumber.equal(new BN(2));
+                        });
+                    });
+                });
+            });
         });
 
         describe("... test endVotingSession", () => {
@@ -538,53 +676,5 @@ contract("Voting", accounts => {
                 });
             });   
         });
-/*
-        
-        
-
-        describe("... test setVote", () => {
-            // Test if not voter
-
-            // Test if is voter 
-
-                // And workflow != VotingSessionStarted
-
-                // And workflow = VotingSessionStarted
-
-                    // And voter not has voted
-
-                        // And proposals not found
-
-                        // And proposals found
-
-                            // Test voter vote
-
-                            // Test voter has vote
-
-                            // Test proposal voteCount
-
-                            // Test EMIT
-
-                    // And voter has voted
-
-                    // And other voter not has voted
-
-                        // And proposals found
-
-                            // Test first voter vote
-
-                            // Test first voter has vote
-
-                            // Test second voter vote
-
-                            // Test second voter has vote
-
-                            // Test proposal voteCount
-
-                            // Test EMIT
-        });
-
-        
-    */
     });
 });
