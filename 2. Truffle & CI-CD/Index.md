@@ -2,7 +2,7 @@
 
 ## Contenu des tests
 
-Le projet courant contient 59 tests pour couvrir le contrat `Voting.sol`
+Le projet courant contient 59 tests pour couvrir le contrat `Voting.sol`\
 Ces tests permettent :
 - de valider le comportement nominal attendu des modifiers et des fonctions
 - de valider l'absence de comportement atypique
