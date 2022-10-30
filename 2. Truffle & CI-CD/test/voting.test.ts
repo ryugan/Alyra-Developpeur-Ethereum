@@ -52,6 +52,8 @@ contract("Voting", accounts => {
     const addProposalDescError = 'Vous ne pouvez pas ne rien proposer';
     const endProposalError = 'Registering proposals havent started yet';
     const startVotingError = 'Registering proposals phase is not finished';
+    const endVotingError = 'Voting session havent started yet';
+    const tallyVotesError = 'Current status is not voting session ended';
 
     let votingInstance: VotingInstance;
  
@@ -378,16 +380,70 @@ contract("Voting", accounts => {
                 await expectRevert(startVotingPromise, ownableError);
             });
 
-            // Test if is owner 
+            describe("... if is owner", () => {
 
-                // And workflow != ProposalsRegistrationEnded
-                //startVotingError
+                it("... and workflow != ProposalsRegistrationEnded", async () => {
+                    const startVotingSPromise = votingInstance.startVotingSession({from:ownerAccount});
+                    await expectRevert(startVotingSPromise, startVotingError);
+                });
 
-                // And workflow = ProposalsRegistrationEnded
+                describe("... and workflow == ProposalsRegistrationEnded", () => {
 
-                    // Test new workflow status = VotingSessionStarted
+                    let receipt: Truffle.TransactionResponse<AllEvents>;
 
-                    // Test EMIT
+                    before(async () => {
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                        await votingInstance.endProposalsRegistering({from:ownerAccount});
+                        receipt = await votingInstance.startVotingSession({from:ownerAccount});
+                    });
+
+                    it("... and emit WorkflowStatusChange", async () => {
+                        expectEvent(receipt, 'WorkflowStatusChange');
+                    });
+
+                    it("... and test current workflow status = VotingSessionStarted", async () => {
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0))
+                        expect(currentStatus).to.be.equal(WorkflowStatus.VotingSessionStarted);
+                    });
+                });
+            });     
+        });
+
+        describe("... test endVotingSession", () => {
+            
+            it("... if is not owner", async () => {
+                const startVotingPromise = votingInstance.endVotingSession({from:unknownAccount});
+                await expectRevert(startVotingPromise, ownableError);
+            });
+
+            describe("... if is owner", () => {
+
+                it("... and workflow != VotingSessionStarted", async () => {
+                    const startVotingSPromise = votingInstance.endVotingSession({from:ownerAccount});
+                    await expectRevert(startVotingSPromise, endVotingError);
+                });
+
+                describe("... and workflow == VotingSessionStarted", () => {
+
+                    let receipt: Truffle.TransactionResponse<AllEvents>;
+
+                    before(async () => {
+                        await votingInstance.startProposalsRegistering({from:ownerAccount});
+                        await votingInstance.endProposalsRegistering({from:ownerAccount});
+                        await votingInstance.startVotingSession({from:ownerAccount});
+                        receipt = await votingInstance.endVotingSession({from:ownerAccount});
+                    });
+
+                    it("... and emit WorkflowStatusChange", async () => {
+                        expectEvent(receipt, 'WorkflowStatusChange');
+                    });
+
+                    it("... and test current workflow status = VotingSessionEnded", async () => {
+                        const currentStatus: WorkflowStatus | undefined = getWorkflowCurrentStatus(receipt.logs.at(0))
+                        expect(currentStatus).to.be.equal(WorkflowStatus.VotingSessionEnded);
+                    });
+                });
+            });     
         });
 /*
         
@@ -433,23 +489,6 @@ contract("Voting", accounts => {
                             // Test proposal voteCount
 
                             // Test EMIT
-        });
-
-
-        
-
-        describe("... test endVotingSession", () => {
-            // Test if not owner
-
-            // Test if is owner 
-
-                // And workflow != VotingSessionStarted
-
-                // And workflow = VotingSessionStarted
-
-                    // Test new workflow status = VotingSessionEnded
-
-                    // Test EMIT
         });
 
         describe("... test tallyVotes", () => {
