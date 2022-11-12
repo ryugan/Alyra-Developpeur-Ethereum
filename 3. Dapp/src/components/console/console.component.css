@@ -1,0 +1,28 @@
+
+.console-title {
+    background-color: #95a3c0;
+    color: #282c34;
+    min-height: 2.5vh;
+    margin: 0;
+    padding-top: 0.4vh;
+    padding-left: 7px;
+    text-align: left;
+    font-size: calc(2px + 1.8vmin);
+}
+
+.console-log {
+    margin-left: 4px;
+    line-height: 1.5em;
+}
+
+.console-log-unknown {
+    color: purple;
+}
+
+.console-log-error {
+    color: red;
+}
+
+.console-log-success {
+    color: green;
+}

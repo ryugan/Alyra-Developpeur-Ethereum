@@ -1,52 +1,57 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Component } from 'react';
 import { ethers } from 'ethers';
-import { Wallet, Wallet__factory as WalletFactory} from './typechain-types';
+import { Voting } from './typechain-types/contracts';
+import { Voting__factory as VotingFactory} from './typechain-types/factories/contracts';
 import { getMetamaskNetwork, getMetamaskAccounts, getMetamaskContract, getMetamaskSigner } from './helpers/contractHelper'
 import './App.css';
+import ILog from './interfaces/iLog';
+import ConsoleComponent from './components/console/console.component';
+import LogLevel from './enumerations/logLevel';
 
 const WalletAddress = '0xAb880578723d58d0A7115b95751Eae7d39789850';
 
-enum LogLevel {
-  unknown = 'unknown',
-  normal = 'normal',
-  success = 'success',
-  error = 'error'
-}
+class App extends Component {
 
-interface ILog {
-  level: LogLevel;
-  message: string;
-}
-
-function App() {
-
+  state = {
+    titleNetwork: '',
+    consoleRows: [] as ILog[]
+  }
+/*
   const [titleNetwork, setTitleNetwork] = useState('');
   const [consoleRows, setConsoleRows] = useState([] as ILog[]);
 
   const [balance, setBalance] = useState('');
   const [amoundSend, setAmoundSend] = useState('');
   const [amoundWithdraw, setAmoundWithdraw] = useState();
-
+*/
+/*
   useEffect(() => {
     loadNetworkTitle();
     getBalance();
   });
-
-  function addLog(log:ILog) {
-    const logs:ILog[] = consoleRows;
-
-    if (logs.length < 11) {
-      logs.push(log);
-    }
-    else {
-      logs.unshift(log);
-      logs.pop();
-    }
-
-    setConsoleRows(logs);
+*/
+  constructor(props:any) {
+    super(props);
+    this.transfer = this.transfer.bind(this);
+    this.loadNetworkTitle();
   }
 
-  async function loadNetworkTitle() {
+  addLog(log:ILog) {
+
+    const rows: ILog[] = this.state.consoleRows;
+
+    if (rows.length < 11) {
+      rows.push(log);
+    }
+    else {
+      rows.pop();
+      rows.unshift(log);
+    }
+
+    this.setState({consoleRows: rows});
+  }
+
+  async loadNetworkTitle() {
     const network = await getMetamaskNetwork(window);
 
       if (network == null) {
@@ -54,14 +59,14 @@ function App() {
       }
 
       let networkName = network.chainId === 1337 ? "hardhat" : network.name;
-      
-      setTitleNetwork(`${network.chainId} - ${networkName}`);
+      this.state.titleNetwork = `${network.chainId} - ${networkName}`;
   }
-
+/*
   async function getBalance() {
+    
     if (typeof window.ethereum != 'undefined') {
       const accounts = await getMetamaskAccounts(window);
-      const contract: Wallet = getMetamaskContract(window, WalletAddress, WalletFactory.abi) as Wallet;
+      const contract: Voting = getMetamaskContract(window, WalletAddress, VotingFactory.abi) as Voting;
       try {
         let overrides = {
           from: accounts[0]
@@ -74,8 +79,10 @@ function App() {
       }
     }
   }
-
-  async function transfer() {
+*/
+  transfer() {
+    this.addLog({level: LogLevel.success, message:`Error - getBalance : `});
+    /*
     if(!amoundSend) {
       return;
     }
@@ -101,47 +108,44 @@ function App() {
         addLog({level: LogLevel.error, message:`Error - transfer : ${e}`});
       }
     }
+    */
   }
 
-  function changeAmountSend(e:any) {
-    setAmoundSend(e.target.value);
+  changeAmountSend(e:any) {
+    
+    //setAmoundSend(e.target.value);
   }
 
-  return (
-    <div className="App">
-      
-        <div className="App-header">
-          <div className="App-header-title">
-            <h1 className="App-header-h1 ">Voting</h1>
-            {titleNetwork && <label className="App-header-network">({titleNetwork})</label>}
+  render() {
+    return (
+      <div className="App">
+        
+          <div className="App-header">
+            <div className="App-header-title">
+              <h1 className="App-header-h1 ">Voting</h1>
+              {this.state.titleNetwork && <label className="App-header-network">({this.state.titleNetwork})</label>}
+            </div>
+          </div>
+  
+        <div className="App-body">
+          <div className="App-body-block admin">
+            <h2 className="App-body-block-title">Admin</h2>
+              <label>Envoyer de l'ether :</label>&nbsp;&nbsp;&nbsp;
+              <input className="input-text" type="text" onChange={this.changeAmountSend}/>
+              <button className="button-text" onClick={this.transfer}>Valider</button>
+          </div>
+          <div className="App-body-block voter">
+            <h2 className="App-body-block-title">Voter</h2>
           </div>
         </div>
+        
+        {this.state.consoleRows.length > 0 && <div className="App-footer">
+          <ConsoleComponent logs={this.state.consoleRows} />
+        </div>}
 
-      <div className="App-body">
-        <div className="App-body-block admin">
-          <h2 className="App-body-block-title">Admin</h2>
-            {balance} eth<br /><br />
-            <label>Envoyer de l'ether :</label>&nbsp;&nbsp;&nbsp;
-            <input className="input-text" type="text" onChange={changeAmountSend}/>
-            <button className="button-text" onClick={transfer}>Valider</button>
-        </div>
-        <div className="App-body-block voter">
-          <h2 className="App-body-block-title">Voter</h2>
-        </div>
       </div>
-      
-      <div className="App-footer">
-        <h2 className="App-footer-title">{">_"}</h2>
-        {consoleRows.length > 0 &&
-          consoleRows.map((row, i) => 
-          <Fragment>
-            <label key={i} className={`console-log console-log-${row.level}`}>{row.message}</label><br/>
-          </Fragment>
-          )
-        }
-      </div>
-    </div>
-  );
+    );
+  }
 }
 
 export default App;
