@@ -1,0 +1,15 @@
+# truffle
+
+
+# typechain
+types/truffle-contracts/
+
+# buidler
+build
+artifacts
+cache
+
+# development
+node_modules
+configs/.env
+src/typechain-types
