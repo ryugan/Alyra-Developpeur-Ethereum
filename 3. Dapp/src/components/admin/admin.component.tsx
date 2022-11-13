@@ -1,10 +1,14 @@
 import { Component } from 'react';
 import { ethers } from 'ethers';
 import LogLevel from '../../enumerations/logLevel';
-import { getMetamaskAccounts, getMetamaskSigner } from '../../helpers/contractHelper';
+import { Voting } from '../../typechain-types/contracts';
+import { Voting__factory as VotingFactory} from '../../typechain-types/factories/contracts';
+import { getMetamaskAccounts, getMetamaskSignedContract } from '../../helpers/contractHelper';
 import './admin.component.css';
 
 class AdminComponent extends Component<{onAddLog: Function}> {
+
+    contractAddress: string = '';
 
     state = {
         newVoterAddress: ''
@@ -12,8 +16,19 @@ class AdminComponent extends Component<{onAddLog: Function}> {
 
     constructor(props:any) {
         super(props);
+
+        this.contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS ?? '';
+
+        if (this.contractAddress === '') {
+            this.logError('Add Voter', 'Contract address is empty');
+        }
+
         this.onAddVoterChange = this.onAddVoterChange.bind(this);
         this.onAddVoterClick = this.onAddVoterClick.bind(this);
+    }
+
+    componentDidMount() {
+        this.addEmitsListener();
     }
 
     todo() {}
@@ -26,39 +41,48 @@ class AdminComponent extends Component<{onAddLog: Function}> {
 
         if (typeof window.ethereum != 'undefined') {
             const accounts = await getMetamaskAccounts(window);
-            const signer = await getMetamaskSigner(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
 
             try {
-                const tx = {
-                    from: accounts[0],
-                    to: process.env.REACT_APP_CONTRACT_ADDRESS,
-                    value: ethers.utils.parseEther(this.state.newVoterAddress)
-                }
-
-                const transaction = await signer.sendTransaction(tx);
-                await transaction.wait();
-                this.props.onAddLog({level: LogLevel.success, date: new Date(), message:`Success - Add Voter : ${this.state.newVoterAddress}`});
+                await contract.addVoter(this.state.newVoterAddress, {from: accounts[0]});  
             }
             catch(e) {
-                this.logError(e);
+                this.logError('Add Voter', e);
             }
         }
     }
 
-    logError(error: any) {
-        const maxLength: number = 50;
-        let errorMessage: string = (error.reason as string) ?? '';
+    addEmitsListener() {
+        const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+        contract.on('VoterRegistered', (address) => this.props.onAddLog({level: LogLevel.success, date: new Date(), message:`Success - Add Voter emit : ${address}`}));
+    }
 
-        if (errorMessage.length > 0) {
+    logError(origine: string, error: any) {
 
-            errorMessage = errorMessage.replace('Error:', '');
+        console.log(error);
 
-            if (errorMessage.length > maxLength) {
-                errorMessage = `${errorMessage.slice(0, maxLength)}...`;
+        let errorMessage: string = 'Open your console to maybe have more information';
+
+        if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        else if (error != null) {
+            
+            if (typeof error.reason === 'string') {
+                const reason: string = (error.reason as string) ?? '';
+
+                if (reason.length > 0) {
+
+                    errorMessage = reason.replace('Error:', '')
+                                        .replace('VM Exception while processing transaction: ', '');
+                }
+            }
+            else if (typeof error.message === 'string') {
+                errorMessage = error.message;
             }
         }
 
-        this.props.onAddLog({level: LogLevel.error, date: new Date(), message:`Error - Add Voter : ${errorMessage}`});
+        this.props.onAddLog({level: LogLevel.error, date: new Date(), message:`Error - ${origine} : ${errorMessage}`});
     }
 
     onAddVoterChange(e:any) {
