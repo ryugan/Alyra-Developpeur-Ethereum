@@ -25,41 +25,28 @@ class AdminComponent extends Component<{onAddLog: Function}> {
 
         this.onAddVoterChange = this.onAddVoterChange.bind(this);
         this.onAddVoterClick = this.onAddVoterClick.bind(this);
+        this.onStartProposalClick = this.onStartProposalClick.bind(this);
+        this.onEndProposalClick = this.onEndProposalClick.bind(this);
+        this.onStartVotingClick = this.onStartVotingClick.bind(this);
+        this.onEndVotingClick = this.onEndVotingClick.bind(this);
+        this.onTallyClick = this.onTallyClick.bind(this);
     }
 
     componentDidMount() {
         this.addEmitsListener();
     }
 
-    todo() {}
-
-    async onAddVoterClick() {
-
-        if (this.state.newVoterAddress == null || this.state.newVoterAddress === '') {
-            return;
-        }
-
-        if (typeof window.ethereum != 'undefined') {
-            const accounts = await getMetamaskAccounts(window);
-            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
-
-            try {
-                await contract.addVoter(this.state.newVoterAddress, {from: accounts[0]});  
-            }
-            catch(e) {
-                this.logError('Add Voter', e);
-            }
-        }
-    }
-
     addEmitsListener() {
         const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
-        contract.on('VoterRegistered', (address) => this.props.onAddLog({level: LogLevel.success, date: new Date(), message:`Success - Add Voter emit : ${address}`}));
+        contract.on('VoterRegistered', (address:string) => this.logSuccess(`Success - emit VoterRegistered : ${address}`));
+        contract.on('WorkflowStatusChange', (previousStatus: ethers.BigNumber, newStatus: ethers.BigNumber,) => this.logSuccess(`Success - emit WorkflowStatusChange : previous ${previousStatus.toString()}, next ${newStatus.toString()}`));
+    }
+
+    logSuccess(message: string) {
+        this.props.onAddLog({level: LogLevel.success, date: new Date(), message: message});
     }
 
     logError(origine: string, error: any) {
-
-        console.log(error);
 
         let errorMessage: string = 'Open your console to maybe have more information';
 
@@ -89,6 +76,100 @@ class AdminComponent extends Component<{onAddLog: Function}> {
         this.setState({newVoterAddress: e.target.value});
     }
 
+    async onAddVoterClick() {
+
+        if (this.state.newVoterAddress == null || this.state.newVoterAddress === '') {
+            return;
+        }
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.addVoter(this.state.newVoterAddress, {from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('Add Voter', e);
+            }
+        }
+    }
+
+    async onStartProposalClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.startProposalsRegistering({from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('Start Proposal', e);
+            }
+        }
+    }
+
+    async onEndProposalClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.endProposalsRegistering({from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('End Proposal', e);
+            }
+        }
+    }
+
+    async onStartVotingClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.startVotingSession({from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('Start Voting', e);
+            }
+        }
+    }
+
+    async onEndVotingClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.endVotingSession({from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('End Voting', e);
+            }
+        }
+    }
+
+    async onTallyClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.tallyVotes({from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('Tally', e);
+            }
+        }
+    }
+
     render() {
 
         return (
@@ -101,19 +182,19 @@ class AdminComponent extends Component<{onAddLog: Function}> {
                     <button className="button button-text" onClick={this.onAddVoterClick}>Add</button><br />
                     <br />
                     <label className="admin-label">Start Proposals :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.todo}>Start</button><br />
+                    <button className="button button-only " onClick={this.onStartProposalClick}>Start</button><br />
                     <br />
                     <label className="admin-label">End Proposals :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.todo}>End</button><br />
+                    <button className="button button-only " onClick={this.onEndProposalClick}>End</button><br />
                     <br />
                     <label className="admin-label">Start Voting :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.todo}>Start</button><br />
+                    <button className="button button-only " onClick={this.onStartVotingClick}>Start</button><br />
                     <br />
                     <label className="admin-label">End Voting :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.todo}>End</button><br />
+                    <button className="button button-only " onClick={this.onEndVotingClick}>End</button><br />
                     <br />
                     <label className="admin-label">Tally Votes :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.todo}>Tally</button>
+                    <button className="button button-only " onClick={this.onTallyClick}>Tally</button>
                 </div>
             </>
         );

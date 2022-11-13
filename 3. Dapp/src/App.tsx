@@ -5,6 +5,7 @@ import ILog from './interfaces/iLog';
 import ConsoleComponent from './components/console/console.component';
 import AdminComponent from './components/admin/admin.component';
 import VoterComponent from './components/voter/voter.component';
+import LogLevel from './enumerations/logLevel';
 
 const WalletAddress = '0xAb880578723d58d0A7115b95751Eae7d39789850';
 
@@ -28,13 +29,38 @@ class App extends Component {
     }
 
     const rows: ILog[] = this.state.consoleRows;
+    const count: number = rows.length;
 
-    if (rows.length > 10) {
-      rows.shift();
+    if (count > 0) {
+
+      if (log.level === LogLevel.success) {
+        const lastLog: ILog = this.state.consoleRows[count-1];
+        const diff = log.date.getTime() - lastLog.date.getTime();
+        var diffMins = Math.round(((diff % 86400000) % 3600000) / 60000);
+
+        if (diffMins < 3 && log.message === lastLog.message) {
+          return;
+        }
+      }
+      
+      if (count > 1) {
+
+        const lastLastLog: ILog = this.state.consoleRows[count-2];
+        const diff = log.date.getTime() - lastLastLog.date.getTime();
+        var diffMins = Math.round(((diff % 86400000) % 3600000) / 60000);
+
+        if (diffMins < 3 && log.message === lastLastLog.message) {
+          return;
+        }
+
+        if (count > 10) {
+          rows.shift();
+        }
+      }
     }
     
     rows.push(log);
-    this.setState({consoleRows: rows});
+      this.setState({consoleRows: rows});
   }
 
   async loadNetworkTitle() {
