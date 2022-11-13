@@ -7,6 +7,7 @@ import './App.css';
 import ILog from './interfaces/iLog';
 import ConsoleComponent from './components/console/console.component';
 import LogLevel from './enumerations/logLevel';
+import AdminComponent from './components/admin/admin.component';
 
 const WalletAddress = '0xAb880578723d58d0A7115b95751Eae7d39789850';
 
@@ -32,22 +33,22 @@ class App extends Component {
 */
   constructor(props:any) {
     super(props);
-    this.transfer = this.transfer.bind(this);
     this.loadNetworkTitle();
   }
 
   addLog(log:ILog) {
 
+    if (log == null) {
+      return;
+    }
+
     const rows: ILog[] = this.state.consoleRows;
 
-    if (rows.length < 11) {
-      rows.push(log);
+    if (rows.length > 10) {
+      rows.shift();
     }
-    else {
-      rows.pop();
-      rows.unshift(log);
-    }
-
+    
+    rows.push(log);
     this.setState({consoleRows: rows});
   }
 
@@ -60,6 +61,15 @@ class App extends Component {
 
       let networkName = network.chainId === 1337 ? "hardhat" : network.name;
       this.state.titleNetwork = `${network.chainId} - ${networkName}`;
+  }
+
+  handleAddLog(log:ILog) {
+
+    if (log == null) {
+      return;
+    }
+
+    this.addLog(log);
   }
 /*
   async function getBalance() {
@@ -80,41 +90,7 @@ class App extends Component {
     }
   }
 */
-  transfer() {
-    this.addLog({level: LogLevel.success, message:`Error - getBalance : `});
-    /*
-    if(!amoundSend) {
-      return;
-    }
-
-    if (typeof window.ethereum != 'undefined') {
-      const accounts = await getMetamaskAccounts(window);
-      const signer = await getMetamaskSigner(window);
-
-      try {
-        const tx = {
-          from: accounts[0],
-          to: WalletAddress,
-          value: ethers.utils.parseEther(amoundSend)
-        }
-
-        const transaction = await signer.sendTransaction(tx);
-        await transaction.wait();
-        setAmoundSend('');
-        getBalance();
-        addLog({level: LogLevel.success, message:`Success - transfer : ${amoundSend}eth`});
-      }
-      catch(e) {
-        addLog({level: LogLevel.error, message:`Error - transfer : ${e}`});
-      }
-    }
-    */
-  }
-
-  changeAmountSend(e:any) {
-    
-    //setAmoundSend(e.target.value);
-  }
+  
 
   render() {
     return (
@@ -129,10 +105,7 @@ class App extends Component {
   
         <div className="App-body">
           <div className="App-body-block admin">
-            <h2 className="App-body-block-title">Admin</h2>
-              <label>Envoyer de l'ether :</label>&nbsp;&nbsp;&nbsp;
-              <input className="input-text" type="text" onChange={this.changeAmountSend}/>
-              <button className="button-text" onClick={this.transfer}>Valider</button>
+              <AdminComponent onAddLog={this.handleAddLog.bind(this)}/>
           </div>
           <div className="App-body-block voter">
             <h2 className="App-body-block-title">Voter</h2>
