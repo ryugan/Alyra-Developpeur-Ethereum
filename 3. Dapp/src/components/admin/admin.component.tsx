@@ -11,6 +11,7 @@ class AdminComponent extends Component<{onAddLog: Function}> {
     contractAddress: string = '';
 
     state = {
+        changeAdmin: '',
         newVoterAddress: ''
     }
 
@@ -23,8 +24,10 @@ class AdminComponent extends Component<{onAddLog: Function}> {
             this.logError('Add Voter', 'Contract address is empty');
         }
 
+        this.onChangeAdminChange = this.onChangeAdminChange.bind(this);
         this.onAddVoterChange = this.onAddVoterChange.bind(this);
         this.onAddVoterClick = this.onAddVoterClick.bind(this);
+        this.onChangeAdminClick = this.onChangeAdminClick.bind(this);
         this.onStartProposalClick = this.onStartProposalClick.bind(this);
         this.onEndProposalClick = this.onEndProposalClick.bind(this);
         this.onStartVotingClick = this.onStartVotingClick.bind(this);
@@ -38,7 +41,8 @@ class AdminComponent extends Component<{onAddLog: Function}> {
 
     addEmitsListener() {
         const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
-        contract.on('VoterRegistered', (address:string) => this.logSuccess(`Success - emit VoterRegistered : ${address}`));
+        contract.on('OwnershipTransferred', (previousOwner:string, newOwner:string) => this.logSuccess(`Success - emit OwnershipTransferred : transfert ownership from ${previousOwner} to ${newOwner} `));
+        contract.on('VoterRegistered', (address:string) => this.logSuccess(`Success - emit VoterRegistered : ${address}`));       
         contract.on('WorkflowStatusChange', (previousStatus: ethers.BigNumber, newStatus: ethers.BigNumber,) => this.logSuccess(`Success - emit WorkflowStatusChange : previous ${previousStatus.toString()}, next ${newStatus.toString()}`));
     }
 
@@ -72,8 +76,31 @@ class AdminComponent extends Component<{onAddLog: Function}> {
         this.props.onAddLog({level: LogLevel.error, date: new Date(), message:`Error - ${origine} : ${errorMessage}`});
     }
 
+    onChangeAdminChange(e:any) {
+        this.setState({changeAdmin: e.target.value});
+    }
+
     onAddVoterChange(e:any) {
         this.setState({newVoterAddress: e.target.value});
+    }
+
+    async onChangeAdminClick() {
+
+        if (this.state.changeAdmin == null || this.state.changeAdmin === '') {
+            return;
+        }
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                await contract.transferOwnership(this.state.changeAdmin, {from: accounts[0]});  
+            }
+            catch(e) {
+                this.logError('Add Voter', e);
+            }
+        }
     }
 
     async onAddVoterClick() {
@@ -177,6 +204,12 @@ class AdminComponent extends Component<{onAddLog: Function}> {
                 <h2 className="admin-title">Admin</h2>
 
                 <div className="admin-body">
+                    <label className="admin-label admin-label">Change admin:</label>&nbsp;&nbsp;&nbsp;
+                    <input className="input-text" type="text" placeholder="Address" onChange={this.onChangeAdminChange}/>
+                    <button className="button button-text" onClick={this.onChangeAdminClick}>Change</button><br />
+                    <br />
+                    <hr></hr>
+                    <br />
                     <label className="admin-label">Add Voter :</label>&nbsp;&nbsp;&nbsp;
                     <input className="input-text" type="text" placeholder="Address" onChange={this.onAddVoterChange}/>
                     <button className="button button-text" onClick={this.onAddVoterClick}>Add</button><br />

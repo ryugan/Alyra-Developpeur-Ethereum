@@ -58,9 +58,9 @@ class App extends Component {
         }
       }
     }
-    
+
     rows.push(log);
-      this.setState({consoleRows: rows});
+    this.setState({consoleRows: rows});
   }
 
   async loadNetworkTitle() {

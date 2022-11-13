@@ -34,6 +34,7 @@ class VoterComponent extends Component<{onAddLog: Function}> {
         this.onGetOneProposalClick = this.onGetOneProposalClick.bind(this);
         this.onAddProposalClick = this.onAddProposalClick.bind(this);
         this.onSetVoteClick = this.onSetVoteClick.bind(this);
+        this.onGetWinningClick = this.onGetWinningClick.bind(this);
     }
 
     componentDidMount() {
@@ -44,6 +45,10 @@ class VoterComponent extends Component<{onAddLog: Function}> {
         const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
         contract.on('ProposalRegistered', (proposalId:string) => this.logSuccess(`Success - emit ProposalRegistered : ${proposalId}`));
         contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
+    }
+
+    logNormal(message: string) {
+        this.props.onAddLog({level: LogLevel.normal, date: new Date(), message: message});
     }
 
     logSuccess(message: string) {
@@ -103,7 +108,12 @@ class VoterComponent extends Component<{onAddLog: Function}> {
             const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
 
             try {
-                await contract.getVoter(this.state.getVoterAddress, {from: accounts[0]});  
+                const voter: Voting.VoterStructOutput = await contract.getVoter(this.state.getVoterAddress, {from: accounts[0]}); 
+                const registed: string = voter[0] ? 'est enregistré' : 'non enregistré';
+                const voted: string = voter[1] ? 'a voté' : 'n\'a pas voté';
+                const votedProposalId: string = voter[2].toNumber() > 0 ? `pour ${voter[2].toString()}` : '';
+
+                this.logNormal(`Get Voter ${this.state.getVoterAddress} : ${registed} et ${voted} ${votedProposalId}`);
             }
             catch(e) {
                 this.logError('Get Voter', e);
@@ -120,9 +130,14 @@ class VoterComponent extends Component<{onAddLog: Function}> {
         if (typeof window.ethereum != 'undefined') {
             const accounts = await getMetamaskAccounts(window);
             const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+            const proposalId:ethers.BigNumber = ethers.BigNumber.from(this.state.getOneProposal);
 
             try {
-                await contract.getOneProposal(this.state.getOneProposal, {from: accounts[0]});  
+                const proposal: Voting.ProposalStructOutput = await contract.getOneProposal(proposalId, {from: accounts[0]});
+                const description: string = proposal[0];
+                const voteCount: number = proposal[1].toNumber();
+
+                this.logNormal(`Get One Proposal ${this.state.getVoterAddress} : La proposal ${description} dispose de ${voteCount} vote(s)`);
             }
             catch(e) {
                 this.logError('Get One Proposal', e);
@@ -158,10 +173,28 @@ class VoterComponent extends Component<{onAddLog: Function}> {
         if (typeof window.ethereum != 'undefined') {
             const accounts = await getMetamaskAccounts(window);
             const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+            const voteId:ethers.BigNumber = ethers.BigNumber.from(this.state.setVote);
 
             try {
-                await contract.setVote(this.state.setVote, {from: accounts[0]});  
+                await contract.setVote(voteId, {from: accounts[0]});  
             }
+            catch(e) {
+                this.logError('Set Vote', e);
+            }
+        }
+    }
+
+    async onGetWinningClick() {
+
+        if (typeof window.ethereum != 'undefined') {
+            const accounts = await getMetamaskAccounts(window);
+            const contract: Voting = getMetamaskSignedContract(window, this.contractAddress, VotingFactory.abi) as Voting;
+
+            try {
+                const winningProposalID: ethers.BigNumber = await contract.winningProposalID({from: accounts[0]});
+
+                this.logNormal(`Get Winning Id : Le vainqueur est ${winningProposalID}`);
+            } 
             catch(e) {
                 this.logError('Set Vote', e);
             }
@@ -190,6 +223,14 @@ class VoterComponent extends Component<{onAddLog: Function}> {
                     <label className="voter-label">Set Vote :</label>&nbsp;&nbsp;&nbsp;
                     <input className="input-text" type="text" placeholder="Id" onChange={this.onSetVoteChange}/>
                     <button className="button button-text" onClick={this.onSetVoteClick}>Add</button>
+                </div>
+
+                <br /><br /><br /><br />
+
+                <h2 className="voter-title">Anyone</h2>
+                <div className="voter-body">
+                    <label className="voter-label">Get Winning Id :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only" onClick={this.onGetWinningClick}>Get</button>
                 </div>
             </>
         );
