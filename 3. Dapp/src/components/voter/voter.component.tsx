@@ -192,11 +192,11 @@ class VoterComponent extends Component<{onAddLog: Function}> {
 
             try {
                 const winningProposalID: ethers.BigNumber = await contract.winningProposalID({from: accounts[0]});
-
-                this.logNormal(`Get Winning Id : Le vainqueur est ${winningProposalID}`);
+                const message: string = winningProposalID.toNumber() > 0 ? `Get Winning Id : Le vainqueur est ${winningProposalID}` : 'Le vainqueur n\'a pas encore été désigné';
+                this.logNormal(message);
             } 
             catch(e) {
-                this.logError('Set Vote', e);
+                this.logError('Winning Id', e);
             }
         }
     }
