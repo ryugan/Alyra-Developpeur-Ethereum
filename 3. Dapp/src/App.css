@@ -36,11 +36,11 @@
   margin: 30px;
 }
 
-.admin {
+.admin-block {
   float: left;
 }
 
-.voter {
+.voter-block {
   float: right;
 }
 
@@ -68,17 +68,26 @@
   border-right: 0;
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
-  padding-left: 1rem;
-  padding-right: 1rem;
+}
+
+.button {
+  width: 70px;
+  height: 1.7rem;
+  background-color: #D1D5DE;
+  color: #393E45;
+  padding-left: 0.85rem;
+  padding-right: 0.8rem;
+  text-align: center;
+}
+
+.button-only {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
 }
 
 .button-text {
-  width: 70px;
-  height: 1.7rem;
   border-top-right-radius: 5px;
   border-bottom-right-radius: 5px;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  background-color: #D1D5DE;
-  color: #393E45;
 }

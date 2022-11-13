@@ -51,9 +51,27 @@ class AdminComponent extends Component<{onAddLog: Function}> {
         return (
             <>
                 <h2 className="admin-title">Admin</h2>
-                <label>Envoyer de l'ether :</label>&nbsp;&nbsp;&nbsp;
-                <input className="input-text" type="text" onChange={this.changeAmountSend}/>
-                <button className="button-text" onClick={this.transfer}>Valider</button>
+
+                <div className="admin-body">
+                    <label className="admin-label">Add Voter :</label>&nbsp;&nbsp;&nbsp;
+                    <input className="input-text" type="text" placeholder="Address" onChange={this.changeAmountSend}/>
+                    <button className="button button-text" onClick={this.transfer}>Add</button><br />
+                    <br />
+                    <label className="admin-label">Start Proposals :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only " onClick={this.transfer}>Start</button><br />
+                    <br />
+                    <label className="admin-label">End Proposals :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only " onClick={this.transfer}>End</button><br />
+                    <br />
+                    <label className="admin-label">Start Voting :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only " onClick={this.transfer}>Start</button><br />
+                    <br />
+                    <label className="admin-label">End Voting :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only " onClick={this.transfer}>End</button><br />
+                    <br />
+                    <label className="admin-label">Tally Votes :</label>&nbsp;&nbsp;&nbsp;
+                    <button className="button button-only " onClick={this.transfer}>Tally</button>
+                </div>
             </>
         );
     }
