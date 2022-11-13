@@ -1,6 +1,5 @@
 import { Component } from 'react';
 import LogLevel from '../../enumerations/logLevel';
-import ILog from '../../interfaces/iLog';
 import './voter.component.css';
 
 class VoterComponent extends Component<{onAddLog: Function}> {

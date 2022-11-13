@@ -3,7 +3,7 @@ import { HardhatNetworkAccountUserConfig } from "hardhat/types";
 import "@nomicfoundation/hardhat-toolbox";
 import { ethers } from 'ethers';
 import * as dotenv from "dotenv";
-dotenv.config({ path: __dirname + '/configs/.env'});
+dotenv.config({ path: __dirname + '/.env'});
 
 const defaultEthBalance: string = ethers.utils.parseEther('1000').toString();
 const accounts: HardhatNetworkAccountUserConfig[] = [

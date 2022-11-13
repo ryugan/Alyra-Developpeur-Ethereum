@@ -1,19 +1,26 @@
 import { Component } from 'react';
+import { ethers } from 'ethers';
 import LogLevel from '../../enumerations/logLevel';
-import ILog from '../../interfaces/iLog';
+import { getMetamaskAccounts, getMetamaskSigner } from '../../helpers/contractHelper';
 import './admin.component.css';
 
 class AdminComponent extends Component<{onAddLog: Function}> {
 
-    constructor(props:any) {
-        super(props);
-        this.transfer = this.transfer.bind(this);
+    state = {
+        newVoterAddress: ''
     }
 
-    transfer() {
-        this.props.onAddLog({level: LogLevel.success, date: new Date(), message:`Error - getBalance : `});
-        /*
-        if(!amoundSend) {
+    constructor(props:any) {
+        super(props);
+        this.onAddVoterChange = this.onAddVoterChange.bind(this);
+        this.onAddVoterClick = this.onAddVoterClick.bind(this);
+    }
+
+    todo() {}
+
+    async onAddVoterClick() {
+
+        if (this.state.newVoterAddress == null || this.state.newVoterAddress === '') {
             return;
         }
 
@@ -22,28 +29,40 @@ class AdminComponent extends Component<{onAddLog: Function}> {
             const signer = await getMetamaskSigner(window);
 
             try {
-            const tx = {
-                from: accounts[0],
-                to: WalletAddress,
-                value: ethers.utils.parseEther(amoundSend)
-            }
+                const tx = {
+                    from: accounts[0],
+                    to: process.env.REACT_APP_CONTRACT_ADDRESS,
+                    value: ethers.utils.parseEther(this.state.newVoterAddress)
+                }
 
-            const transaction = await signer.sendTransaction(tx);
-            await transaction.wait();
-            setAmoundSend('');
-            getBalance();
-            addLog({level: LogLevel.success, message:`Success - transfer : ${amoundSend}eth`});
+                const transaction = await signer.sendTransaction(tx);
+                await transaction.wait();
+                this.props.onAddLog({level: LogLevel.success, date: new Date(), message:`Success - Add Voter : ${this.state.newVoterAddress}`});
             }
             catch(e) {
-            addLog({level: LogLevel.error, message:`Error - transfer : ${e}`});
+                this.logError(e);
             }
         }
-        */
     }
 
-    changeAmountSend(e:any) {
-    
-    //setAmoundSend(e.target.value);
+    logError(error: any) {
+        const maxLength: number = 50;
+        let errorMessage: string = (error.reason as string) ?? '';
+
+        if (errorMessage.length > 0) {
+
+            errorMessage = errorMessage.replace('Error:', '');
+
+            if (errorMessage.length > maxLength) {
+                errorMessage = `${errorMessage.slice(0, maxLength)}...`;
+            }
+        }
+
+        this.props.onAddLog({level: LogLevel.error, date: new Date(), message:`Error - Add Voter : ${errorMessage}`});
+    }
+
+    onAddVoterChange(e:any) {
+        this.setState({newVoterAddress: e.target.value});
     }
 
     render() {
@@ -54,23 +73,23 @@ class AdminComponent extends Component<{onAddLog: Function}> {
 
                 <div className="admin-body">
                     <label className="admin-label">Add Voter :</label>&nbsp;&nbsp;&nbsp;
-                    <input className="input-text" type="text" placeholder="Address" onChange={this.changeAmountSend}/>
-                    <button className="button button-text" onClick={this.transfer}>Add</button><br />
+                    <input className="input-text" type="text" placeholder="Address" onChange={this.onAddVoterChange}/>
+                    <button className="button button-text" onClick={this.onAddVoterClick}>Add</button><br />
                     <br />
                     <label className="admin-label">Start Proposals :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.transfer}>Start</button><br />
+                    <button className="button button-only " onClick={this.todo}>Start</button><br />
                     <br />
                     <label className="admin-label">End Proposals :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.transfer}>End</button><br />
+                    <button className="button button-only " onClick={this.todo}>End</button><br />
                     <br />
                     <label className="admin-label">Start Voting :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.transfer}>Start</button><br />
+                    <button className="button button-only " onClick={this.todo}>Start</button><br />
                     <br />
                     <label className="admin-label">End Voting :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.transfer}>End</button><br />
+                    <button className="button button-only " onClick={this.todo}>End</button><br />
                     <br />
                     <label className="admin-label">Tally Votes :</label>&nbsp;&nbsp;&nbsp;
-                    <button className="button button-only " onClick={this.transfer}>Tally</button>
+                    <button className="button button-only " onClick={this.todo}>Tally</button>
                 </div>
             </>
         );

@@ -17,6 +17,7 @@ class App extends Component {
 
   constructor(props:any) {
     super(props);
+    this.handleAddLog = this.handleAddLog.bind(this);
     this.loadNetworkTitle();
   }
 
@@ -69,10 +70,10 @@ class App extends Component {
   
         <div className="App-body">
           <div className="App-body-block admin-block">
-              <AdminComponent onAddLog={this.handleAddLog.bind(this)}/>
+              <AdminComponent onAddLog={this.handleAddLog}/>
           </div>
           <div className="App-body-block voter-block">
-            <VoterComponent onAddLog={this.handleAddLog.bind(this)}/>
+            <VoterComponent onAddLog={this.handleAddLog}/>
           </div>
         </div>
         
