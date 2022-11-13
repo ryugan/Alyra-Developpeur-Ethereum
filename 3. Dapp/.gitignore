@@ -12,4 +12,3 @@ cache
 # development
 node_modules
 .env
-src/typechain-types
