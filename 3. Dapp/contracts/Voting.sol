@@ -46,6 +46,14 @@ contract Voting is Ownable {
 
     // ::::::::::::: GETTERS ::::::::::::: //
 
+    function isOwner() external view returns (bool) {
+        return owner() == msg.sender;
+    }
+
+    function isVoter() external view returns (bool) {
+        return voters[msg.sender].isRegistered;
+    }
+
     function getVoter(address _addr) external onlyVoters view returns (Voter memory) {
         return voters[_addr];
     }
@@ -54,7 +62,6 @@ contract Voting is Ownable {
         return proposalsArray[_id];
     }
 
- 
     // ::::::::::::: REGISTRATION ::::::::::::: // 
 
     function addVoter(address _addr) external onlyOwner {

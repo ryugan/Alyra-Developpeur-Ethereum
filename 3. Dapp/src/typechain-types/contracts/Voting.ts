@@ -59,6 +59,8 @@ export interface VotingInterface extends utils.Interface {
     "endVotingSession()": FunctionFragment;
     "getOneProposal(uint256)": FunctionFragment;
     "getVoter(address)": FunctionFragment;
+    "isOwner()": FunctionFragment;
+    "isVoter()": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setVote(uint256)": FunctionFragment;
@@ -78,6 +80,8 @@ export interface VotingInterface extends utils.Interface {
       | "endVotingSession"
       | "getOneProposal"
       | "getVoter"
+      | "isOwner"
+      | "isVoter"
       | "owner"
       | "renounceOwnership"
       | "setVote"
@@ -113,6 +117,8 @@ export interface VotingInterface extends utils.Interface {
     functionFragment: "getVoter",
     values: [PromiseOrValue<string>]
   ): string;
+  encodeFunctionData(functionFragment: "isOwner", values?: undefined): string;
+  encodeFunctionData(functionFragment: "isVoter", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
@@ -165,6 +171,8 @@ export interface VotingInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getVoter", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "isOwner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "isVoter", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
@@ -316,6 +324,10 @@ export interface Voting extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[Voting.VoterStructOutput]>;
 
+    isOwner(overrides?: CallOverrides): Promise<[boolean]>;
+
+    isVoter(overrides?: CallOverrides): Promise<[boolean]>;
+
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
@@ -377,6 +389,10 @@ export interface Voting extends BaseContract {
     overrides?: CallOverrides
   ): Promise<Voting.VoterStructOutput>;
 
+  isOwner(overrides?: CallOverrides): Promise<boolean>;
+
+  isVoter(overrides?: CallOverrides): Promise<boolean>;
+
   owner(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
@@ -433,6 +449,10 @@ export interface Voting extends BaseContract {
       _addr: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<Voting.VoterStructOutput>;
+
+    isOwner(overrides?: CallOverrides): Promise<boolean>;
+
+    isVoter(overrides?: CallOverrides): Promise<boolean>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
@@ -519,6 +539,10 @@ export interface Voting extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    isOwner(overrides?: CallOverrides): Promise<BigNumber>;
+
+    isVoter(overrides?: CallOverrides): Promise<BigNumber>;
+
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
@@ -580,6 +604,10 @@ export interface Voting extends BaseContract {
       _addr: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    isOwner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    isVoter(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

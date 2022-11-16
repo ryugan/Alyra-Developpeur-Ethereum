@@ -2,6 +2,23 @@
   text-align: center;
 }
 
+.App-current-wallet {
+  float: right;
+  height: 1.2rem;
+  background-color: #D1D5DE;
+  color: #393E45;
+  margin-top: 1px;
+  padding-top: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  font-size: 0.8rem;
+  text-align: center;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
 .App-header {
   max-height: 10vh;
   display: flex;
@@ -9,6 +26,7 @@
   align-items: center;
   justify-content: center;
   color: white;
+  width: 100%;
 }
 
 .App-header-title {
@@ -31,7 +49,6 @@
 
 .App-body-block {
   background-color: white;
-  min-height: 40vh;
   width: 40%;
   margin: 30px;
 }
