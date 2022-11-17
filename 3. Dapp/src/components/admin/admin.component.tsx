@@ -16,6 +16,7 @@ interface AdminComponentProperties {
 
     onAddLog: Function,
     onAddVoter: Function,
+    onWorkflowStatusChange: Function,
 }
 
 class AdminComponent extends Component<AdminComponentProperties> {
@@ -50,10 +51,9 @@ class AdminComponent extends Component<AdminComponentProperties> {
             this.logSuccess(`Success - emit VoterRegistered : ${address}`); 
             this.props.onAddVoter();
         });
-        contract.on('WorkflowStatusChange', (previousStatus: ethers.BigNumber, newStatus: ethers.BigNumber) => {
-            const previousStatusEnum: WorkflowStatus = previousStatus.toNumber() as WorkflowStatus;
-            const newStatusEnum: WorkflowStatus = newStatus.toNumber() as WorkflowStatus;
-            this.logSuccess(`Success - emit WorkflowStatusChange : previous ${WorkflowStatus[previousStatusEnum]}, next ${WorkflowStatus[newStatusEnum]}`);
+        contract.on('WorkflowStatusChange', (previousStatus: WorkflowStatus, newStatus: WorkflowStatus) => {
+            this.logSuccess(`Success - emit WorkflowStatusChange : change from ${WorkflowStatus[previousStatus]} to ${WorkflowStatus[newStatus]}`);
+            this.props.onWorkflowStatusChange(newStatus);
         });
     }
 

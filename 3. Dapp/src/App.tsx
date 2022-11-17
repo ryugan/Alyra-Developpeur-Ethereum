@@ -30,6 +30,7 @@ class App extends Component {
 
     this.handleAddVoter = this.handleAddVoter.bind(this);
     this.handleAddLog = this.handleAddLog.bind(this);
+    this.handleWorkflowStatusChange = this.handleWorkflowStatusChange.bind(this);
   }
 
   componentDidMount () {
@@ -184,6 +185,10 @@ class App extends Component {
     }
   }
 
+  handleWorkflowStatusChange(currentStatus: WorkflowStatus) {
+    this.setState({currentWorkflowStatus: currentStatus});
+  }
+
   render() {
     return (
       <div className="App">
@@ -199,7 +204,7 @@ class App extends Component {
           {this.state.isAdmin && <div className="App-body-block admin-block">
               <AdminComponent contractAddress={this.state.contractAddress} contractABI={this.state.contractABI}
                 currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
-                onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} />
+                onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} onWorkflowStatusChange={this.handleWorkflowStatusChange} />
           </div>}
           {this.state.isVoter && <div className="App-body-block voter-block">
               <VoterComponent contractAddress={this.state.contractAddress} contractABI={this.state.contractABI}
