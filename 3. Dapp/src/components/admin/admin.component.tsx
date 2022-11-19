@@ -1,19 +1,16 @@
 import { Component } from 'react';
-import { ethers } from 'ethers';
 import LogLevel from '../../enumerations/logLevel';
 import { Voting } from '../../typechain-types/contracts';
-import { getMetamaskAccounts, getMetamaskSignedContract } from '../../helpers/contractHelper';
-import './admin.component.css';
 import WorkflowStatus from '../../enumerations/workflowStatus';
 import { Address } from '../../types/Address';
-import { ABI } from '../../types/ABI';
+import './admin.component.css';
 
 interface AdminComponentProperties {
-    contractAddress: Address,
-    contractABI: ABI,
+    contract: Voting 
     currentWallet: Address,
     currentWorkflowStatus: WorkflowStatus,
 
+    onOwnershipTransferred: Function,
     onAddLog: Function,
     onAddVoter: Function,
     onWorkflowStatusChange: Function,
@@ -45,13 +42,15 @@ class AdminComponent extends Component<AdminComponentProperties> {
     }
 
     addEmitsListener() {
-        const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-        contract.on('OwnershipTransferred', (previousOwner:string, newOwner:string) => this.logSuccess(`Success - emit OwnershipTransferred : transfert ownership from ${previousOwner} to ${newOwner} `));
-        contract.on('VoterRegistered', (address:string) => {
+        this.props.contract.on('OwnershipTransferred', (previousOwner:string, newOwner:string) => {
+            this.logSuccess(`Success - emit OwnershipTransferred : transfert ownership from ${previousOwner} to ${newOwner} `);
+            this.props.onOwnershipTransferred();
+        });
+        this.props.contract.on('VoterRegistered', (address:string) => {
             this.logSuccess(`Success - emit VoterRegistered : ${address}`); 
             this.props.onAddVoter();
         });
-        contract.on('WorkflowStatusChange', (previousStatus: WorkflowStatus, newStatus: WorkflowStatus) => {
+        this.props.contract.on('WorkflowStatusChange', (previousStatus: WorkflowStatus, newStatus: WorkflowStatus) => {
             this.logSuccess(`Success - emit WorkflowStatusChange : change from ${WorkflowStatus[previousStatus]} to ${WorkflowStatus[newStatus]}`);
             this.props.onWorkflowStatusChange(newStatus);
         });
@@ -101,11 +100,10 @@ class AdminComponent extends Component<AdminComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
+        if (typeof window.ethereum != 'undefined') 
+        {
             try {
-                await contract.transferOwnership(this.state.changeAdmin, {from: this.props.currentWallet});  
+                await this.props.contract.transferOwnership(this.state.changeAdmin, {from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Add Voter', e);
@@ -120,10 +118,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
         }
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.addVoter(this.state.newVoterAddress, {from: this.props.currentWallet});  
+                await this.props.contract.addVoter(this.state.newVoterAddress, {from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Add Voter', e);
@@ -134,10 +130,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
     async onStartProposalClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
-            try {
-                await contract.startProposalsRegistering({from: this.props.currentWallet});  
+           try {
+                await this.props.contract.startProposalsRegistering({from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Start Proposal', e);
@@ -148,10 +142,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
     async onEndProposalClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.endProposalsRegistering({from: this.props.currentWallet});  
+                await this.props.contract.endProposalsRegistering({from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('End Proposal', e);
@@ -162,10 +154,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
     async onStartVotingClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.startVotingSession({from: this.props.currentWallet});  
+                await this.props.contract.startVotingSession({from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Start Voting', e);
@@ -176,10 +166,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
     async onEndVotingClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.endVotingSession({from: this.props.currentWallet});  
+                await this.props.contract.endVotingSession({from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('End Voting', e);
@@ -190,10 +178,8 @@ class AdminComponent extends Component<AdminComponentProperties> {
     async onTallyClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.tallyVotes({from: this.props.currentWallet});  
+                await this.props.contract.tallyVotes({from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Tally', e);

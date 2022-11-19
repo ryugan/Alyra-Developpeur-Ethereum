@@ -12,45 +12,42 @@ import { ABI } from './types/ABI';
 import { Address } from './types/Address';
 import WorkflowStatus from './enumerations/workflowStatus';
 
+interface IAppState {
+    contract: Voting | null,
+    currentWallet: Address,
+    currentNetwork: string,
+    isAdmin: boolean,
+    isVoter: boolean,
+    currentWorkflowStatus: WorkflowStatus,
+    consoleRows: ILog[]
+}
+
 class App extends Component {
 
-  state = {
-    contractAddress: '' as Address,
-    contractABI: '' as ABI,
-    currentWallet: '' as Address,
+  state: IAppState = {
+    contract: null,
+    currentWallet: '',
     currentNetwork: '',
     isAdmin: false,
     isVoter: false,
     currentWorkflowStatus: WorkflowStatus.Unknown,
-    consoleRows: [] as ILog[]
+    consoleRows: []
   }
 
   constructor(props:any) {
     super(props);
 
+    this.handleOwnershipTransferred = this.handleOwnershipTransferred.bind(this);
+    this.handleWorkflowStatusChange = this.handleWorkflowStatusChange.bind(this);
     this.handleAddVoter = this.handleAddVoter.bind(this);
     this.handleAddLog = this.handleAddLog.bind(this);
-    this.handleWorkflowStatusChange = this.handleWorkflowStatusChange.bind(this);
   }
 
   componentDidMount () {
+
     if (typeof window.ethereum === 'undefined') {
       this.logError('App', 'No wallet detected');
       return;
-    }
-
-    this.state.contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS ?? '';
-
-    if (this.state.contractAddress === '') {
-        this.logError('App', 'Contract address is empty');
-        return;
-    }
-
-    this.state.contractABI = VotingFactory.abi;
-
-    if (this.state.contractABI == null) {
-        this.logError('App', 'Contract ABI is empty');
-        return;
     }
 
     this.init();
@@ -87,7 +84,18 @@ class App extends Component {
 
   async initContractValues() {
 
-    const contract: Voting = getMetamaskSignedContract(window, this.state.contractAddress, this.state.contractABI) as Voting;
+    if (process.env.REACT_APP_CONTRACT_ADDRESS === '') {
+        this.logError('App', 'Contract address is empty');
+        return;
+    }
+
+    if (VotingFactory.abi == null) {
+        this.logError('App', 'Contract ABI is empty');
+        return;
+    }
+ 
+    const contract: Voting = getMetamaskSignedContract(window, process.env.REACT_APP_CONTRACT_ADDRESS ?? '', VotingFactory.abi) as Voting;
+    this.setState({contract: contract});
 
     const workflowStatus: number = await contract.workflowStatus({from: this.state.currentWallet});
     this.setState({currentWorkflowStatus: workflowStatus});
@@ -97,6 +105,7 @@ class App extends Component {
 
     const isVoter: boolean = await contract.isVoter({from: this.state.currentWallet});
     this.setState({isVoter: isVoter});
+  
   }
 
   logError(origine: string, error: any) {
@@ -177,16 +186,22 @@ class App extends Component {
   
   async handleAddVoter() {
 
-    if (typeof window.ethereum != 'undefined') {
-      const contract: Voting = getMetamaskSignedContract(window, this.state.contractAddress, this.state.contractABI) as Voting;
-      const isVoter: boolean = await contract.isVoter({from: this.state.currentWallet});
-
+    if (typeof window.ethereum != 'undefined' && this.state.contract) {
+      const isVoter: boolean = await this.state.contract.isVoter({from: this.state.currentWallet});
       this.setState({isVoter: isVoter});
     }
   }
 
   handleWorkflowStatusChange(currentStatus: WorkflowStatus) {
     this.setState({currentWorkflowStatus: currentStatus});
+  }
+
+  async handleOwnershipTransferred() {
+
+    if (typeof window.ethereum != 'undefined' && this.state.contract) {
+      const isOwner: boolean = await this.state.contract.isOwner({from: this.state.currentWallet});
+      this.setState({isAdmin:  isOwner});
+    }
   }
 
   render() {
@@ -202,12 +217,13 @@ class App extends Component {
   
         <div className="App-body">
           {this.state.isAdmin && <div className="App-body-block admin-block">
-              <AdminComponent contractAddress={this.state.contractAddress} contractABI={this.state.contractABI}
+              <AdminComponent contract={this.state.contract as Voting}
                 currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
-                onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} onWorkflowStatusChange={this.handleWorkflowStatusChange} />
+                onOwnershipTransferred={this.handleOwnershipTransferred} onWorkflowStatusChange={this.handleWorkflowStatusChange} 
+                onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} />
           </div>}
           {this.state.isVoter && <div className="App-body-block voter-block">
-              <VoterComponent contractAddress={this.state.contractAddress} contractABI={this.state.contractABI}
+              <VoterComponent contract={this.state.contract as Voting}
                 currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
                 onAddLog={this.handleAddLog} />
           </div>}

@@ -2,15 +2,12 @@ import { Component } from 'react';
 import { ethers } from 'ethers';
 import LogLevel from '../../enumerations/logLevel';
 import { Voting } from '../../typechain-types/contracts';
-import { getMetamaskAccounts, getMetamaskSignedContract } from '../../helpers/contractHelper';
-import './voter.component.css';
 import { Address } from '../../types/Address';
-import { ABI } from '../../types/ABI';
 import WorkflowStatus from '../../enumerations/workflowStatus';
+import './voter.component.css';
 
 interface VoterComponentProperties {
-    contractAddress: Address,
-    contractABI: ABI,
+    contract: Voting 
     currentWallet: Address,
     currentWorkflowStatus: WorkflowStatus,
 
@@ -45,9 +42,8 @@ class VoterComponent extends Component<VoterComponentProperties> {
     }
 
     addEmitsListener() {
-        const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-        contract.on('ProposalRegistered', (proposalId:string) => this.logSuccess(`Success - emit ProposalRegistered : ${proposalId}`));
-        contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
+        this.props.contract.on('ProposalRegistered', (proposalId:string) => this.logSuccess(`Success - emit ProposalRegistered : ${proposalId}`));
+        this.props.contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
     }
 
     logNormal(message: string) {
@@ -107,10 +103,8 @@ class VoterComponent extends Component<VoterComponentProperties> {
         }
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                const voter: Voting.VoterStructOutput = await contract.getVoter(this.state.getVoterAddress, {from: this.props.currentWallet}); 
+                const voter: Voting.VoterStructOutput = await this.props.contract.getVoter(this.state.getVoterAddress, {from: this.props.currentWallet}); 
                 const registed: string = voter[0] ? 'est enregistré' : 'non enregistré';
                 const voted: string = voter[1] ? 'a voté' : 'n\'a pas voté';
                 const votedProposalId: string = voter[2].toNumber() > 0 ? `pour ${voter[2].toString()}` : '';
@@ -130,11 +124,10 @@ class VoterComponent extends Component<VoterComponentProperties> {
         }
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
             const proposalId:ethers.BigNumber = ethers.BigNumber.from(this.state.getOneProposal);
 
             try {
-                const proposal: Voting.ProposalStructOutput = await contract.getOneProposal(proposalId, {from: this.props.currentWallet});
+                const proposal: Voting.ProposalStructOutput = await this.props.contract.getOneProposal(proposalId, {from: this.props.currentWallet});
                 const description: string = proposal[0];
                 const voteCount: number = proposal[1].toNumber();
 
@@ -153,10 +146,8 @@ class VoterComponent extends Component<VoterComponentProperties> {
         }
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                await contract.addProposal(this.state.addProposal, {from: this.props.currentWallet});  
+                await this.props.contract.addProposal(this.state.addProposal, {from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Add Proposal', e);
@@ -171,11 +162,10 @@ class VoterComponent extends Component<VoterComponentProperties> {
         }
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
             const voteId:ethers.BigNumber = ethers.BigNumber.from(this.state.setVote);
 
             try {
-                await contract.setVote(voteId, {from: this.props.currentWallet});  
+                await this.props.contract.setVote(voteId, {from: this.props.currentWallet});  
             }
             catch(e) {
                 this.logError('Set Vote', e);
@@ -186,10 +176,8 @@ class VoterComponent extends Component<VoterComponentProperties> {
     async onGetWinningClick() {
 
         if (typeof window.ethereum != 'undefined') {
-            const contract: Voting = getMetamaskSignedContract(window, this.props.contractAddress, this.props.contractABI) as Voting;
-
             try {
-                const winningProposalID: ethers.BigNumber = await contract.winningProposalID({from: this.props.currentWallet});
+                const winningProposalID: ethers.BigNumber = await this.props.contract.winningProposalID({from: this.props.currentWallet});
                 const message: string = winningProposalID.toNumber() > 0 ? `Get Winning Id : Le vainqueur est ${winningProposalID}` : 'Le vainqueur n\'a pas encore été désigné';
                 this.logNormal(message);
             } 
