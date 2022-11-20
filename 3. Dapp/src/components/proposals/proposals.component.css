@@ -1,0 +1,12 @@
+.proposals-title {
+    background-color: #95a3c0;
+    color: #282c34;
+    min-height: 3.5vh;
+    margin-top: 0px;
+    padding-top: 1vh;
+    font-size: calc(4px + 2vmin);
+  }
+
+  .proposals-sub-title {
+    font-size: 1.2rem;
+  }

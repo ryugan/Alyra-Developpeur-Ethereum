@@ -8,6 +8,7 @@
     "os": false
   },
   "dependencies": {
+    "@material-ui/core": "^4.12.4",
     "@openzeppelin/contracts": "^4.8.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",

@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import ILog from '../../interfaces/iLog';
+import ILog from '../../models/ILog';
 import './console.component.css';
 
 const maxLength: number = 80;

@@ -1,16 +1,18 @@
 import { Component } from 'react';
 import { getMetamaskAccounts, getMetamaskNetwork, getMetamaskSignedContract } from './helpers/contractHelper'
-import './App.css';
-import ILog from './interfaces/iLog';
+import ILog from './models/ILog';
 import ConsoleComponent from './components/console/console.component';
 import AdminComponent from './components/admin/admin.component';
 import VoterComponent from './components/voter/voter.component';
 import LogLevel from './enumerations/logLevel';
 import { Voting } from './typechain-types/contracts/Voting';
 import { Voting__factory as VotingFactory} from './typechain-types/factories/contracts';
-import { ABI } from './types/ABI';
 import { Address } from './types/Address';
 import WorkflowStatus from './enumerations/workflowStatus';
+import IProposal from './models/IProposal';
+import ProposalsComponent from './components/proposals/proposals.component';
+import Grid from "@material-ui/core/Grid";
+import './App.css';
 
 interface IAppState {
     contract: Voting | null,
@@ -19,7 +21,8 @@ interface IAppState {
     isAdmin: boolean,
     isVoter: boolean,
     currentWorkflowStatus: WorkflowStatus,
-    consoleRows: ILog[]
+    proposals: IProposal[],
+    consoleRows: ILog[],
 }
 
 class App extends Component {
@@ -31,11 +34,15 @@ class App extends Component {
     isAdmin: false,
     isVoter: false,
     currentWorkflowStatus: WorkflowStatus.Unknown,
+    proposals: [],
     consoleRows: []
   }
 
   constructor(props:any) {
     super(props);
+
+    this.initRoles = this.initRoles.bind(this);
+    this.addProposal = this.addProposal.bind(this);
 
     this.handleOwnershipTransferred = this.handleOwnershipTransferred.bind(this);
     this.handleWorkflowStatusChange = this.handleWorkflowStatusChange.bind(this);
@@ -50,13 +57,25 @@ class App extends Component {
       return;
     }
 
+    this.addEmitsListener();
     this.init();
+  }
+
+  addEmitsListener() {
+    window.ethereum.on('accountsChanged', async (accounts: Address[]) => {
+      this.addLog({level: LogLevel.unknown, date: new Date(), message:`Account change - from ${this.state.currentWallet} to ${accounts[0]}`});
+
+      this.state.contract = null;
+      this.state.currentWallet = '';
+      await this.init();
+    });
   }
 
   async init() {
     await this.initNetworkTitle();
     await this.initWallet();
     await this.initContractValues();
+    await this.initRoles();
   }
 
   async initNetworkTitle() {
@@ -99,13 +118,17 @@ class App extends Component {
 
     const workflowStatus: number = await contract.workflowStatus({from: this.state.currentWallet});
     this.setState({currentWorkflowStatus: workflowStatus});
+  }
 
-    const isOwner: boolean = await contract.isOwner({from: this.state.currentWallet});
-    this.setState({isAdmin:  isOwner});
+  async initRoles() {
 
-    const isVoter: boolean = await contract.isVoter({from: this.state.currentWallet});
-    this.setState({isVoter: isVoter});
-  
+    if (typeof window.ethereum != 'undefined' && this.state.contract) {
+      const isOwner: boolean = await this.state.contract.isOwner({from: this.state.currentWallet});
+      this.setState({isAdmin:  isOwner});
+
+      const isVoter: boolean = await this.state.contract.isVoter({from: this.state.currentWallet});
+      this.setState({isVoter: isVoter});
+    }
   }
 
   logError(origine: string, error: any) {
@@ -204,7 +227,29 @@ class App extends Component {
     }
   }
 
+  addProposal(proposal : IProposal | null): void {
+
+    if (proposal == null) {
+        return;
+    }
+
+    const index = this.state.proposals.map(function(x) {return x.id; }).indexOf(proposal.id);
+
+    if (index < 0) {
+        this.state.proposals.push(proposal);
+    }
+    else {
+        this.state.proposals[index].description = proposal.description;
+        this.state.proposals[index].vote = proposal.vote;
+    }
+  }
+
   render() {
+
+    const isAdminVisible: boolean = this.state.isAdmin;
+    const isProposalsVisible: boolean = this.state.isVoter && this.state.proposals.length > 0;
+    const isVoterVisible: boolean = this.state.isVoter;
+
     return (
       <div className="App">
           {this.state.currentWallet && <label className="App-current-wallet">{this.state.currentWallet}</label>}
@@ -214,19 +259,30 @@ class App extends Component {
               {this.state.currentNetwork && <label className="App-header-network">({this.state.currentNetwork})</label>}
             </div>
           </div>
-  
+
         <div className="App-body">
-          {this.state.isAdmin && <div className="App-body-block admin-block">
-              <AdminComponent contract={this.state.contract as Voting}
-                currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
-                onOwnershipTransferred={this.handleOwnershipTransferred} onWorkflowStatusChange={this.handleWorkflowStatusChange} 
-                onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} />
-          </div>}
-          {this.state.isVoter && <div className="App-body-block voter-block">
-              <VoterComponent contract={this.state.contract as Voting}
-                currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
-                onAddLog={this.handleAddLog} />
-          </div>}
+          <Grid container>
+            <Grid item sm={12} md={6} lg={4}>
+              {isAdminVisible && <div className="App-body-block admin-block">
+                <AdminComponent isAdmin={this.state.isAdmin} contract={this.state.contract as Voting}
+                  currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
+                  onOwnershipTransferred={this.handleOwnershipTransferred} onWorkflowStatusChange={this.handleWorkflowStatusChange} 
+                  onAddLog={this.handleAddLog} onAddVoter={this.handleAddVoter} />
+            </div>}
+            </Grid>
+            <Grid item sm={12} md={6} lg={4}>
+              {isProposalsVisible && <div className="App-body-block proposals-block">
+                <ProposalsComponent proposals={this.state.proposals} />
+            </div>}
+            </Grid>
+            <Grid item sm={12} md={6} lg={4}>
+              {isVoterVisible && <div className="App-body-block voter-block">
+                <VoterComponent isVoter={this.state.isVoter} contract={this.state.contract as Voting}
+                  currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
+                  onAddLog={this.handleAddLog} onAddProposal={this.addProposal}/>
+            </div>}
+            </Grid>
+          </Grid>
         </div>
         
         {this.state.consoleRows.length > 0 && <div className="App-footer">

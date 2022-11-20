@@ -6,7 +6,8 @@ import { Address } from '../../types/Address';
 import './admin.component.css';
 
 interface AdminComponentProperties {
-    contract: Voting 
+    isAdmin: boolean,
+    contract: Voting | null
     currentWallet: Address,
     currentWorkflowStatus: WorkflowStatus,
 
@@ -42,18 +43,20 @@ class AdminComponent extends Component<AdminComponentProperties> {
     }
 
     addEmitsListener() {
-        this.props.contract.on('OwnershipTransferred', (previousOwner:string, newOwner:string) => {
-            this.logSuccess(`Success - emit OwnershipTransferred : transfert ownership from ${previousOwner} to ${newOwner} `);
-            this.props.onOwnershipTransferred();
-        });
-        this.props.contract.on('VoterRegistered', (address:string) => {
-            this.logSuccess(`Success - emit VoterRegistered : ${address}`); 
-            this.props.onAddVoter();
-        });
-        this.props.contract.on('WorkflowStatusChange', (previousStatus: WorkflowStatus, newStatus: WorkflowStatus) => {
-            this.logSuccess(`Success - emit WorkflowStatusChange : change from ${WorkflowStatus[previousStatus]} to ${WorkflowStatus[newStatus]}`);
-            this.props.onWorkflowStatusChange(newStatus);
-        });
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
+            this.props.contract.on('OwnershipTransferred', (previousOwner:string, newOwner:string) => {
+                this.logSuccess(`Success - emit OwnershipTransferred : transfert ownership from ${previousOwner} to ${newOwner} `);
+                this.props.onOwnershipTransferred();
+            });
+            this.props.contract.on('VoterRegistered', (address:string) => {
+                this.logSuccess(`Success - emit VoterRegistered : ${address}`); 
+                this.props.onAddVoter();
+            });
+            this.props.contract.on('WorkflowStatusChange', (previousStatus: WorkflowStatus, newStatus: WorkflowStatus) => {
+                this.logSuccess(`Success - emit WorkflowStatusChange : change from ${WorkflowStatus[previousStatus]} to ${WorkflowStatus[newStatus]}`);
+                this.props.onWorkflowStatusChange(newStatus);
+            });
+        }
     }
 
     logSuccess(message: string) {
@@ -100,7 +103,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') 
+        if (typeof window.ethereum != 'undefined' && this.props.contract) 
         {
             try {
                 await this.props.contract.transferOwnership(this.state.changeAdmin, {from: this.props.currentWallet});  
@@ -117,7 +120,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.addVoter(this.state.newVoterAddress, {from: this.props.currentWallet});  
             }
@@ -129,7 +132,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
 
     async onStartProposalClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
            try {
                 await this.props.contract.startProposalsRegistering({from: this.props.currentWallet});  
             }
@@ -141,7 +144,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
 
     async onEndProposalClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.endProposalsRegistering({from: this.props.currentWallet});  
             }
@@ -153,7 +156,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
 
     async onStartVotingClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.startVotingSession({from: this.props.currentWallet});  
             }
@@ -165,7 +168,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
 
     async onEndVotingClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.endVotingSession({from: this.props.currentWallet});  
             }
@@ -177,7 +180,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
 
     async onTallyClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.tallyVotes({from: this.props.currentWallet});  
             }
@@ -200,10 +203,10 @@ class AdminComponent extends Component<AdminComponentProperties> {
                     <br />
                     <hr></hr>
                     <br />
-                    <label className="admin-label">Add Voter :</label>&nbsp;&nbsp;&nbsp;
-                    <input className="input-text" type="text" placeholder="Address" onChange={this.onAddVoterChange}/>
-                    <button className="button button-text" onClick={this.onAddVoterClick}>Add</button><br />
                     {this.props.currentWorkflowStatus === WorkflowStatus.RegisteringVoters && <>
+                        <label className="admin-label">Add Voter :</label>&nbsp;&nbsp;&nbsp;
+                        <input className="input-text" type="text" placeholder="Address" onChange={this.onAddVoterChange}/>
+                        <button className="button button-text" onClick={this.onAddVoterClick}>Add</button><br />
                         <br />
                         <label className="admin-label">Start Proposals :</label>&nbsp;&nbsp;&nbsp;
                         <button className="button button-only " onClick={this.onStartProposalClick}>Start</button><br />

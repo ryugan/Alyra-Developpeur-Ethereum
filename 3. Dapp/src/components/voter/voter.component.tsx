@@ -3,15 +3,18 @@ import { ethers } from 'ethers';
 import LogLevel from '../../enumerations/logLevel';
 import { Voting } from '../../typechain-types/contracts';
 import { Address } from '../../types/Address';
+import IProposal from '../../models/IProposal';
 import WorkflowStatus from '../../enumerations/workflowStatus';
 import './voter.component.css';
 
 interface VoterComponentProperties {
-    contract: Voting 
+    isVoter: boolean,
+    contract: Voting | null
     currentWallet: Address,
     currentWorkflowStatus: WorkflowStatus,
 
     onAddLog: Function,
+    onAddProposal: Function,
 }
 
 class VoterComponent extends Component<VoterComponentProperties> {
@@ -26,6 +29,8 @@ class VoterComponent extends Component<VoterComponentProperties> {
     constructor(props:any) {
         super(props);
 
+        this.mapStringToProposal = this.mapStringToProposal.bind(this);
+
         this.onGetVoterChange = this.onGetVoterChange.bind(this);
         this.onGetOneProposalChange = this.onGetOneProposalChange.bind(this);
         this.onAddProposalChange = this.onAddProposalChange.bind(this);
@@ -39,11 +44,35 @@ class VoterComponent extends Component<VoterComponentProperties> {
 
     componentDidMount() {
         this.addEmitsListener();
+        this.initContractValues();
+    }
+
+    async initContractValues() {
+        if (this.props.isVoter && typeof window.ethereum != 'undefined' && this.props.contract) {
+            try {
+                const rawStrProposals: string = await this.props.contract.getProposalsList({from: this.props.currentWallet});
+                const splittedStrProposals: string[] = rawStrProposals.split(',');
+                splittedStrProposals.map(s => {
+                    const proposal: IProposal | null = this.mapStringToProposal(s);
+                    this.props.onAddProposal(proposal);
+                });
+            }
+            catch(e) {
+                // No proposal exists
+            }
+        }
     }
 
     addEmitsListener() {
-        this.props.contract.on('ProposalRegistered', (proposalId:string) => this.logSuccess(`Success - emit ProposalRegistered : ${proposalId}`));
-        this.props.contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
+            this.props.contract.on('ProposalRegistered', (strProposal:string) => {
+                this.logSuccess(`Success - emit ProposalRegistered : ${strProposal}`);
+
+                const proposal: IProposal | null = this.mapStringToProposal(strProposal);
+                this.props.onAddProposal(proposal);
+            });
+            this.props.contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
+        }
     }
 
     logNormal(message: string) {
@@ -102,7 +131,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 const voter: Voting.VoterStructOutput = await this.props.contract.getVoter(this.state.getVoterAddress, {from: this.props.currentWallet}); 
                 const registed: string = voter[0] ? 'est enregistré' : 'non enregistré';
@@ -123,7 +152,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             const proposalId:ethers.BigNumber = ethers.BigNumber.from(this.state.getOneProposal);
 
             try {
@@ -145,7 +174,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 await this.props.contract.addProposal(this.state.addProposal, {from: this.props.currentWallet});  
             }
@@ -161,7 +190,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
             return;
         }
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             const voteId:ethers.BigNumber = ethers.BigNumber.from(this.state.setVote);
 
             try {
@@ -175,7 +204,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
 
     async onGetWinningClick() {
 
-        if (typeof window.ethereum != 'undefined') {
+        if (typeof window.ethereum != 'undefined' && this.props.contract) {
             try {
                 const winningProposalID: ethers.BigNumber = await this.props.contract.winningProposalID({from: this.props.currentWallet});
                 const message: string = winningProposalID.toNumber() > 0 ? `Get Winning Id : Le vainqueur est ${winningProposalID}` : 'Le vainqueur n\'a pas encore été désigné';
@@ -186,6 +215,31 @@ class VoterComponent extends Component<VoterComponentProperties> {
             }
         }
     }
+
+    mapStringToProposal(from: string): IProposal | null {
+
+        if (from == null || from === '') {
+            return null;
+        }
+
+        var splitted = from.split('-');
+
+        if (splitted.length < 2 || !Number.isInteger(+splitted[0])) {
+            return null;
+        }
+
+        const id: number = parseInt(splitted[0]);
+        const description: string = splitted[1] ?? '';
+        const vote: number = Number.isInteger(splitted[2]) ? parseInt(splitted[2]) : 0;
+
+        return {
+            id: id,
+            description: description,
+            vote: vote
+        };
+    }
+
+    
 
     render() {
 

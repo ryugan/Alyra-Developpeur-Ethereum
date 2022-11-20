@@ -43,22 +43,23 @@
 }
 
 .App-body {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
   margin-top: 25px;
   min-height: 50vh;
 }
 
 .App-body-block {
   background-color: white;
-  width: 40%;
   margin: 30px;
+  min-height: 300px;
 }
 
-.admin-block {
-  float: left;
-}
-
-.voter-block {
-  float: right;
+.proposals-block {
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .App-body-block-title {
@@ -74,6 +75,7 @@
   background-color: white;
   color: black;
   min-height: 26vh;
+  width: 80%;
   margin: 0 30px 0 30px;
   text-align: left;
 }

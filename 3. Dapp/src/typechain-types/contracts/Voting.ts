@@ -58,6 +58,7 @@ export interface VotingInterface extends utils.Interface {
     "endProposalsRegistering()": FunctionFragment;
     "endVotingSession()": FunctionFragment;
     "getOneProposal(uint256)": FunctionFragment;
+    "getProposalsList()": FunctionFragment;
     "getVoter(address)": FunctionFragment;
     "isOwner()": FunctionFragment;
     "isVoter()": FunctionFragment;
@@ -79,6 +80,7 @@ export interface VotingInterface extends utils.Interface {
       | "endProposalsRegistering"
       | "endVotingSession"
       | "getOneProposal"
+      | "getProposalsList"
       | "getVoter"
       | "isOwner"
       | "isVoter"
@@ -112,6 +114,10 @@ export interface VotingInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getOneProposal",
     values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getProposalsList",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getVoter",
@@ -170,6 +176,10 @@ export interface VotingInterface extends utils.Interface {
     functionFragment: "getOneProposal",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getProposalsList",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "getVoter", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isOwner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isVoter", data: BytesLike): Result;
@@ -203,7 +213,7 @@ export interface VotingInterface extends utils.Interface {
 
   events: {
     "OwnershipTransferred(address,address)": EventFragment;
-    "ProposalRegistered(uint256)": EventFragment;
+    "ProposalRegistered(string)": EventFragment;
     "Voted(address,uint256)": EventFragment;
     "VoterRegistered(address)": EventFragment;
     "WorkflowStatusChange(uint8,uint8)": EventFragment;
@@ -229,10 +239,10 @@ export type OwnershipTransferredEventFilter =
   TypedEventFilter<OwnershipTransferredEvent>;
 
 export interface ProposalRegisteredEventObject {
-  proposalId: BigNumber;
+  strProposal: string;
 }
 export type ProposalRegisteredEvent = TypedEvent<
-  [BigNumber],
+  [string],
   ProposalRegisteredEventObject
 >;
 
@@ -319,6 +329,8 @@ export interface Voting extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[Voting.ProposalStructOutput]>;
 
+    getProposalsList(overrides?: CallOverrides): Promise<[string]>;
+
     getVoter(
       _addr: PromiseOrValue<string>,
       overrides?: CallOverrides
@@ -384,6 +396,8 @@ export interface Voting extends BaseContract {
     overrides?: CallOverrides
   ): Promise<Voting.ProposalStructOutput>;
 
+  getProposalsList(overrides?: CallOverrides): Promise<string>;
+
   getVoter(
     _addr: PromiseOrValue<string>,
     overrides?: CallOverrides
@@ -445,6 +459,8 @@ export interface Voting extends BaseContract {
       overrides?: CallOverrides
     ): Promise<Voting.ProposalStructOutput>;
 
+    getProposalsList(overrides?: CallOverrides): Promise<string>;
+
     getVoter(
       _addr: PromiseOrValue<string>,
       overrides?: CallOverrides
@@ -489,10 +505,10 @@ export interface Voting extends BaseContract {
       newOwner?: PromiseOrValue<string> | null
     ): OwnershipTransferredEventFilter;
 
-    "ProposalRegistered(uint256)"(
-      proposalId?: null
+    "ProposalRegistered(string)"(
+      strProposal?: null
     ): ProposalRegisteredEventFilter;
-    ProposalRegistered(proposalId?: null): ProposalRegisteredEventFilter;
+    ProposalRegistered(strProposal?: null): ProposalRegisteredEventFilter;
 
     "Voted(address,uint256)"(voter?: null, proposalId?: null): VotedEventFilter;
     Voted(voter?: null, proposalId?: null): VotedEventFilter;
@@ -533,6 +549,8 @@ export interface Voting extends BaseContract {
       _id: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    getProposalsList(overrides?: CallOverrides): Promise<BigNumber>;
 
     getVoter(
       _addr: PromiseOrValue<string>,
@@ -599,6 +617,8 @@ export interface Voting extends BaseContract {
       _id: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    getProposalsList(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getVoter(
       _addr: PromiseOrValue<string>,

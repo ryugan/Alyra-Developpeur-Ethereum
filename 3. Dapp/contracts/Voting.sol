@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 
@@ -34,7 +35,7 @@ contract Voting is Ownable {
 
     event VoterRegistered(address voterAddress); 
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
-    event ProposalRegistered(uint proposalId);
+    event ProposalRegistered(string strProposal);
     event Voted (address voter, uint proposalId);
     
     modifier onlyVoters() {
@@ -42,7 +43,9 @@ contract Voting is Ownable {
         _;
     }
     
-    // on peut faire un modifier pour les états
+    function proposalToString(uint index, Proposal memory proposal) internal pure returns(string memory) {
+        return string.concat(Strings.toString(index), "-", proposal.description, "-", Strings.toString(proposal.voteCount));
+    }
 
     // ::::::::::::: GETTERS ::::::::::::: //
 
@@ -60,6 +63,24 @@ contract Voting is Ownable {
     
     function getOneProposal(uint _id) external onlyVoters view returns (Proposal memory) {
         return proposalsArray[_id];
+    }
+
+    /**
+     * @dev Get list of proposals
+     * Can only be called by a voter
+     */
+    function getProposalsList() external onlyVoters view returns(string memory) {
+        require(proposalsArray.length > 0, "Voting: Proposal not exists (list is empty)");
+
+        string memory result = "";
+        uint proposalCount = proposalsArray.length;
+
+        for (uint cpt=0 ; cpt<proposalCount; cpt++) {
+            Proposal memory proposal = proposalsArray[cpt];
+            result = string.concat(string.concat(result, proposalToString(cpt, proposal)), ", ");
+        }
+        
+        return result;
     }
 
     // ::::::::::::: REGISTRATION ::::::::::::: // 
@@ -83,7 +104,7 @@ contract Voting is Ownable {
         Proposal memory proposal;
         proposal.description = _desc;
         proposalsArray.push(proposal);
-        emit ProposalRegistered(proposalsArray.length-1);
+        emit ProposalRegistered(proposalToString(proposalsArray.length-1, proposal));
     }
 
     // ::::::::::::: VOTE ::::::::::::: //
