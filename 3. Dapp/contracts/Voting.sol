@@ -89,12 +89,15 @@ contract Voting is Ownable {
         return voters[_addr];
     }
     
-    /** @notice Returns a proposal
+    /** 
+     * @notice Returns a proposal
      * @dev Can only be called by a voter
      * @param _id Proposal's id
      * @return Proposal
+     * @custom:correcteur Ajout d'un require pour éviter une exception
      */
     function getOneProposal(uint _id) external onlyVoters view returns (Proposal memory) {
+        require(proposalsArray.length > _id, "Voting: Proposal not exists");
         return proposalsArray[_id];
     }
 
@@ -102,6 +105,7 @@ contract Voting is Ownable {
      * @notice Returns list of proposals as a string
      * @dev Can only be called by a voter
      * @return string
+     * @custom:correcteur Si beaucoup de proposals, et afin d'éviter un unique appel avec un problème de gaz, il serait possible de faire évoluer la fonction pour utiliser de la pagination
      */
     function getProposalsList() external onlyVoters view returns(string memory) {
         require(proposalsArray.length > 0, "Voting: Proposal not exists (list is empty)");
@@ -157,14 +161,15 @@ contract Voting is Ownable {
      * @notice Sets a vote
      * @dev Can only be called by a voter
      * @param _id Proposal's index
+     * @custom:correcteur Initialisation de hasVoted en premier pour éviter de voter plusieurs fois 
      */
     function setVote( uint _id) external onlyVoters {
         require(workflowStatus == WorkflowStatus.VotingSessionStarted, 'Voting session havent started yet');
         require(voters[msg.sender].hasVoted != true, 'You have already voted');
         require(_id < proposalsArray.length, 'Proposal not found'); // pas obligé, et pas besoin du >0 car uint
 
-        voters[msg.sender].votedProposalId = _id;
         voters[msg.sender].hasVoted = true;
+        voters[msg.sender].votedProposalId = _id;
         proposalsArray[_id].voteCount++;
 
         emit Voted(msg.sender, _id);
@@ -221,11 +226,12 @@ contract Voting is Ownable {
     /**
      * @notice Tallies votes
      * @dev Can only be called by the current admin
+     * @custom:correcteur Si beaucoup de proposals, et afin d'éviter un unique appel avec un problème de gaz, il serait possible de calculer au fil de l'eau le vainqueur plutôt qu'au dernier moment
      */
    function tallyVotes() external onlyOwner {
        require(workflowStatus == WorkflowStatus.VotingSessionEnded, "Current status is not voting session ended");
        uint _winningProposalId;
-      for (uint256 p = 0; p < proposalsArray.length; p++) {
+       for (uint256 p = 0; p < proposalsArray.length; p++) {
            if (proposalsArray[p].voteCount > proposalsArray[_winningProposalId].voteCount) {
                _winningProposalId = p;
           }
