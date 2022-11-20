@@ -43,6 +43,7 @@ class App extends Component {
 
     this.initRoles = this.initRoles.bind(this);
     this.addProposal = this.addProposal.bind(this);
+    this.voteProposal = this.voteProposal.bind(this);
 
     this.handleOwnershipTransferred = this.handleOwnershipTransferred.bind(this);
     this.handleWorkflowStatusChange = this.handleWorkflowStatusChange.bind(this);
@@ -233,15 +234,28 @@ class App extends Component {
         return;
     }
 
-    const index = this.state.proposals.map(function(x) {return x.id; }).indexOf(proposal.id);
+    const proposals: IProposal[] = this.state.proposals;//[...this.state.proposals];
+    const index = proposals.map(function(x) {return x.id; }).indexOf(proposal.id);
 
     if (index < 0) {
-        this.state.proposals.push(proposal);
+      proposals.push(proposal);
     }
     else {
-        this.state.proposals[index].description = proposal.description;
-        this.state.proposals[index].vote = proposal.vote;
+      proposals[index].description = proposal.description;
+      proposals[index].vote = proposal.vote;
     }
+
+    this.setState({proposals:  proposals});
+  }
+
+  voteProposal(proposalId : number): void {
+    if (proposalId > 0 && proposalId < this.state.proposals.length) {
+        return;
+    }
+    
+    const proposals = this.state.proposals;
+    proposals[proposalId].vote++;
+    this.setState({proposals:  proposals});
   }
 
   render() {
@@ -279,7 +293,8 @@ class App extends Component {
               {isVoterVisible && <div className="App-body-block voter-block">
                 <VoterComponent isVoter={this.state.isVoter} contract={this.state.contract as Voting}
                   currentWallet={this.state.currentWallet} currentWorkflowStatus={this.state.currentWorkflowStatus} 
-                  onAddLog={this.handleAddLog} onAddProposal={this.addProposal}/>
+                  onAddLog={this.handleAddLog} 
+                  onAddProposal={this.addProposal} onVoteProposal={this.voteProposal}/>
             </div>}
             </Grid>
           </Grid>

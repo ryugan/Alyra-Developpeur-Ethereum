@@ -226,7 +226,7 @@ class AdminComponent extends Component<AdminComponentProperties> {
                         <label className="admin-label">End Voting :</label>&nbsp;&nbsp;&nbsp;
                         <button className="button button-only " onClick={this.onEndVotingClick}>End</button><br />
                     </>}
-                    {this.props.currentWorkflowStatus === WorkflowStatus.ProposalsRegistrationEnded && <>
+                    {this.props.currentWorkflowStatus === WorkflowStatus.VotingSessionEnded && <>
                         <br />
                         <label className="admin-label">Tally Votes :</label>&nbsp;&nbsp;&nbsp;
                         <button className="button button-only " onClick={this.onTallyClick}>Tally</button>

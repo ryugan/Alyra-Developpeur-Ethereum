@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component, Fragment } from 'react';
 import ILog from '../../models/ILog';
 import './console.component.css';
 
@@ -27,9 +27,9 @@ class ConsoleComponent extends Component<{logs: ILog[]}> {
             <>
                 <h2 className="console-title">{">_"}</h2>
                 {this.props.logs.map((log, i) => 
-                    <>
-                        <label key={i} className={`console-log console-log-${log.level}`} title={log.message}>{`[${this.formatDate(log.date)}] ${this.formatShortLog(log.message)}`}</label><br/>
-                    </>
+                    <Fragment key={i}>
+                        <label className={`console-log console-log-${log.level}`} title={log.message}>{`[${this.formatDate(log.date)}] ${this.formatShortLog(log.message)}`}</label><br/>
+                    </Fragment>
                 )}
             </>
         );

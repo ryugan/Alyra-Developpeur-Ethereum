@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component, Fragment } from 'react';
 import IProposal from '../../models/IProposal';
 import './proposals.component.css';
 
@@ -27,9 +27,10 @@ class ProposalsComponent extends Component<{proposals: IProposal[]}> {
                     Proposals <label className="proposals-sub-title">({proposals.length})</label>
                 </h2>
                 {proposals.map((prop) => 
-                    <>
-                        <label key={prop.id} title={prop.description}>{this.format(prop)}</label><br/>
-                    </>
+                    <Fragment key={prop.id}>
+                        <label title={prop.description}>{this.format(prop)}</label><br/>
+                        <br/>
+                    </Fragment>
                 )}
             </>
         );

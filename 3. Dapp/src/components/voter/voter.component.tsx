@@ -15,6 +15,7 @@ interface VoterComponentProperties {
 
     onAddLog: Function,
     onAddProposal: Function,
+    onVoteProposal: Function,
 }
 
 class VoterComponent extends Component<VoterComponentProperties> {
@@ -52,6 +53,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
             try {
                 const rawStrProposals: string = await this.props.contract.getProposalsList({from: this.props.currentWallet});
                 const splittedStrProposals: string[] = rawStrProposals.split(',');
+
                 splittedStrProposals.map(s => {
                     const proposal: IProposal | null = this.mapStringToProposal(s);
                     this.props.onAddProposal(proposal);
@@ -71,7 +73,10 @@ class VoterComponent extends Component<VoterComponentProperties> {
                 const proposal: IProposal | null = this.mapStringToProposal(strProposal);
                 this.props.onAddProposal(proposal);
             });
-            this.props.contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`));
+            this.props.contract.on('Voted', (address: string, proposalId: ethers.BigNumber,) => {
+                this.logSuccess(`Success - emit Voted : address ${address}, proposalId ${proposalId.toString()}`)
+                this.props.onAddProposal(proposalId.toNumber());
+            });
         }
     }
 
@@ -160,7 +165,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
                 const description: string = proposal[0];
                 const voteCount: number = proposal[1].toNumber();
 
-                this.logNormal(`Get One Proposal ${this.state.getVoterAddress} : La proposal ${description} dispose de ${voteCount} vote(s)`);
+                this.logNormal(`Get One Proposal ${this.state.getVoterAddress} : La proposal "[${this.state.getOneProposal}] ${description}" dispose de ${voteCount} vote${voteCount > 0 ? 's' : ''}`);
             }
             catch(e) {
                 this.logError('Get One Proposal', e);
@@ -230,7 +235,7 @@ class VoterComponent extends Component<VoterComponentProperties> {
 
         const id: number = parseInt(splitted[0]);
         const description: string = splitted[1] ?? '';
-        const vote: number = Number.isInteger(splitted[2]) ? parseInt(splitted[2]) : 0;
+        const vote: number = Number.isInteger(+splitted[2]) ? parseInt(splitted[2]) : 0;
 
         return {
             id: id,
@@ -238,8 +243,6 @@ class VoterComponent extends Component<VoterComponentProperties> {
             vote: vote
         };
     }
-
-    
 
     render() {
 
